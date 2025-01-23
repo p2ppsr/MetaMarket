@@ -18,6 +18,8 @@ const UploadFile = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileErrorMessage, setFileErrorMessage] = useState<string | null>(null)
+  const [coverImage, setCoverImage] = useState<File | null>(null)
+  const [coverErrorMessage, setCoverErrorMessage] = useState<string | null>(null)
   const [showAdvancedConfig, setShowAdvancedConfig] = useState(false)
 
   const [fields, setFields] = useState({
@@ -38,6 +40,28 @@ const UploadFile = () => {
         setFileErrorMessage("Please upload a valid STL file.")
         setSelectedFile(null)
       }
+    }
+  }
+
+  const handleCoverChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    const file = e.target.files?.[0] || null
+
+    if (file) {
+      const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"]
+      if (!allowedTypes.includes(file.type)) {
+        setCoverImage(null)
+        setCoverErrorMessage("Please upload a valid image file (PNG, JPG, JPEG, or WebP.")
+        return
+      }
+
+      if (file.size > 1000 * 1024) {
+        setCoverImage(null)
+        setCoverErrorMessage("The cover image size must not exceed 1 MB.")
+        return
+      }
+
+      setCoverImage(file)
+      setCoverErrorMessage(null)
     }
   }
 
@@ -66,6 +90,11 @@ const UploadFile = () => {
       return
     }
 
+    if (!coverImage) {
+      setCoverErrorMessage("A cover image is required.")
+      return
+    }
+
     try {
       setIsLoading(true)
 
@@ -78,7 +107,8 @@ const UploadFile = () => {
         description: fields.description.value,
         satoshis: Number(fields.satoshis.value),
         publicKey,
-        expiration: Number(fields.expiration.value)
+        expiration: Number(fields.expiration.value),
+        coverImage
       }
 
       console.log(filehosting)
@@ -175,6 +205,40 @@ const UploadFile = () => {
             </Typography>
           )}
         </Paper>
+        {/* Cover Picture submit box */}
+        <Box mb={2} display="flex" alignItems="center">
+          <input
+            type="file"
+            accept="image/png, image/jpg, image/jpg, image/webp"
+            onChange={handleCoverChange}
+            style={{ display: "none" }}
+            id="cover-image-input"
+          />
+          <label htmlFor="cover-image-input">
+            <Button variant="contained" component="span">
+              Choose Cover Image
+            </Button>
+          </label>
+          <Box ml={2}>
+            {coverImage && <Typography variant="body2">{coverImage.name}</Typography>}
+            {coverErrorMessage && (
+              <Typography color="error" variant="body2">
+                {coverErrorMessage}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+        {coverImage && (
+          <Box mb={2}>
+            <Typography variant="h6">Preview:</Typography>
+            <img
+              src={URL.createObjectURL(coverImage)}
+              alt="Cover Preview"
+              style={{ maxWidth: "300px", maxHeight: "300px" }}
+            />
+          </Box>
+        )}
+
         {/* Advanced Config */}
         <Box mb={2}>
           <Button
@@ -214,7 +278,7 @@ const UploadFile = () => {
           type="submit"
           variant="contained"
           color="primary"
-          disabled={isLoading || !selectedFile || Object.entries(fields).some(([key, field]) =>
+          disabled={isLoading || !selectedFile || !coverImage || Object.entries(fields).some(([key, field]) =>
             key !== "description" && (field.error || !field.value)
           )
           }

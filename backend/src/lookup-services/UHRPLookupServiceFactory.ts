@@ -4,6 +4,8 @@ import { Script, Utils } from '@bsv/sdk'
 import docs from './UHRPLookupDocs.md.js'
 import { Db } from 'mongodb'
 import pushdrop from 'pushdrop'
+import { StoreReference, DetailsReference } from '../types.js'
+
 
 /**
  * Implements a UHRP lookup service
@@ -30,20 +32,26 @@ class UHRPLookupService implements LookupService {
    */
   async outputAdded?(txid: string, outputIndex: number, outputScript: Script, topic: string): Promise<void> {
     if (topic !== 'tm_uhrp') return
+    console.log( pushdrop.decode({ script: outputScript.toHex(), fieldFormat: 'buffer'}).fields)
     try {
       const decodedScript = pushdrop.decode({ script: outputScript.toHex(), fieldFormat: 'buffer'})
+      const fields = decodedScript.fields
 
-      const fileHash = decodedScript.fields[1]
-      const name = decodedScript.fields[2]
-      const description = decodedScript.fields[3]
-      const satoshis = decodedScript.fields[4]
-      const creatorPublicKey = decodedScript.fields[5]
-      const size = decodedScript.fields[6]
-      const retentionPeriod = decodedScript[7]
+      const fileHash = fields[1]?.toString('utf8')
+      const fileURL = fields[2]?.toString('utf8')
+      const name = fields[3]?.toString('utf8')
+      const description = fields[4]?.toString('utf8')
+      const satoshis = Number(fields[5]?.toString('utf8'))
+      const creatorPublicKey = fields[6]?.toString('utf8')
+      const size = Number(fields[7]?.toString('utf8'))
+      const retentionPeriod = Number(fields[8]?.toString('utf8'))
+      const coverHash = fields[9]?.toString('utf8')
+      const coverURL = fields[10]?.toString('utf8')
 
       // Store the token fields for future lookup
       await this.storage.storeRecord(
         fileHash,
+        fileURL,
         name,
         description,
         satoshis,
@@ -51,7 +59,9 @@ class UHRPLookupService implements LookupService {
         size,
         txid,
         outputIndex,
-        retentionPeriod
+        retentionPeriod,
+        coverHash,
+        coverURL
       )
     } catch (error) {
       console.error('Failed to store record', error)
@@ -87,17 +97,49 @@ class UHRPLookupService implements LookupService {
    * @returns A promise that resolves to a lookup answer or formula
    */
   async lookup(question: LookupQuestion): Promise<LookupAnswer | LookupFormula> {
-    if (question.query === undefined || question.query === null) {
-      throw new Error('A valid query must be provided!')
-    }
-    if (question.service !== 'ls_uhrp') {
-      throw new Error('Lookup service not supported!')
-    }
-
-    if (question.query === 'findAll') {
-      return await this.storage.findAll()
-    } else {
-      throw new Error('Unknown query type')
+    try {
+      const query =  question.query
+      
+      // Validate query presence
+      if (!query) {
+        throw new Error('A valid query must be provided!');
+      }
+  
+      // Validate service
+      if (question.service !== 'ls_uhrp') {
+        throw new Error('Lookup service not supported!');
+      }
+  
+      // Handle specific queries
+      if (query === 'findAll') {
+        return await this.storage.findAll();
+      }
+  
+      if (query === 'findStore') {
+        const result: StoreReference[] = await this.storage.findStore();
+        return {
+          type: 'freeform',
+          result,
+        };
+      }
+  
+      if (isFindDetailsQuery(query)) {
+        const { txid, outputIndex } = query.value;
+        if (!txid || outputIndex === undefined) {
+          throw new Error('findDetails query must include txid and outputIndex.');
+        }
+  
+        const result: DetailsReference[] = await this.storage.findDetails(txid, outputIndex);
+        return {
+          type: 'freeform',
+          result,
+        };
+      }
+  
+      throw new Error('Unknown query type');
+    } catch (error) {
+      console.error('Failed to process lookup query:', error);
+      throw error;
     }
   }
 
@@ -126,6 +168,16 @@ class UHRPLookupService implements LookupService {
       shortDescription: 'MetaMarket.'
     }
   }
+}
+
+function isFindDetailsQuery(query: any): query is { type: 'findDetails'; value: { txid: string, outputIndex: number} } {
+  return (
+    typeof query === 'object' &&
+    query.type === 'findDetails' &&
+    query.value &&
+    typeof query.value.txid === 'string' &&
+    typeof query.value.outputIndex === 'number'
+  )
 }
 
 // Factory function

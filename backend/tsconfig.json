@@ -1,15 +1,14 @@
 {
-  "files": [],
   "compilerOptions": {
+    "module": "ESNext",
+    "target": "ESNext",
+    "moduleResolution": "node",
     "esModuleInterop": true,
-    "module": "ESNext"
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true
   },
-  "references": [
-    {
-      "path": "tsconfig.esm.json"
-    },
-    {
-      "path": "tsconfig.types.json"
-    }
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

@@ -1,4 +1,4 @@
-import { getHashFromURL, getURLForFile } from "uhrp-url"
+import { publishFile } from 'nanostore-publisher'
 import pushdrop from "pushdrop"
 import { TaggedBEEF } from "@bsv/sdk"
 import { createAction, EnvelopeEvidenceApi, toBEEFfromEnvelope } from "@babbage/sdk-ts"
@@ -10,43 +10,63 @@ export async function publishCommitment({
     description,
     satoshis,
     publicKey,
-    expiration
+    expiration,
+    coverImage
 }: {
     file: File,
     name: string,
     description: string,
     satoshis: number,
     publicKey: string,
-    expiration: number
+    expiration: number,
+    coverImage: File
 }): Promise<string> {
     try {
-        // Storing the file on the UHRP host
-        const fileBlob = new Blob([file], { type: file.type })
-        const arrayBuffer = await fileBlob.arrayBuffer()
-        const fileBuf = Buffer.from(arrayBuffer)
-        const uhrpURL = getURLForFile(fileBuf)
-        const hash = getHashFromURL(uhrpURL)
+        const serverURL = 'https://nanostore.babbage.systems'
         
+        // Storing the file on the UHRP host
+        const retentionPeriod = expiration * 24 * 60
+        
+        console.log(coverImage)
+
+        const stl = await publishFile({
+            file,
+            retentionPeriod
+        })
+
+        console.log(`STL Hash: ${stl.hash}, Url: ${stl.publicURL}`)
+        
+        // Storing the cover image on UHRP
+        const cover = await publishFile({
+            file: coverImage,
+            retentionPeriod
+        })
+        
+        console.log(`Cover Image Hash: ${cover.hash}, URL ${cover.publicURL}`)
+    
         const expiryTime = Date.now() + (expiration * 60 * 60 * 24 * 1000)
         
         const lockingScript = await pushdrop.create({
             fields: [
                 Buffer.from('1UHRPYnMHPuQ5Tgb3AF8JXqwKkmZVy5hG', 'utf8'),
-                Buffer.from(hash),
+                Buffer.from(stl.hash, 'utf8'),
+                Buffer.from(stl.publicURL, 'utf8'),
                 Buffer.from(name, 'utf8'),
                 Buffer.from(description, 'utf8'),
                 Buffer.from('' + satoshis, 'utf8'),
                 Buffer.from(publicKey, 'utf8'),
-                Buffer.from('' + fileBlob.size, 'utf8'),
+                Buffer.from('' + file.size, 'utf8'),
                 Buffer.from('' + expiryTime, 'utf8'),
+                Buffer.from(cover.hash, 'utf8'),
+                Buffer.from(cover.publicURL, 'utf8')
             ]
         })
 
-        console.log(`Script values:\n1UHRPYnMHPuQ5Tgb3AF8JXqwKkmZVy5hG\n${hash}\n${name}\n${description}\n${satoshis}\n${publicKey}\n${fileBlob.size}\n${expiryTime}`) // TODO REMOOOOOOOVE!!
+        console.log(`Script values:\n1UHRPYnMHPuQ5Tgb3AF8JXqwKkmZVy5hG\n${stl.hash}\n${name}\n${description}\n${satoshis}\n${publicKey}\n${file.size}\n${expiryTime}\n${cover.hash}`) // TODO REMOOOOOOOVE!!
 
         const newToken = await createAction({
             outputs:[{
-                satoshis: 50, // TODO,
+                satoshis: 1,
                 script: lockingScript
             }],
             description:'publish UHRP token'
@@ -70,25 +90,8 @@ export async function publishCommitment({
         
         const submitResponse = broadcaster.send(`http://localhost:8080`, taggedBEEF)
 
-        /*
-        const submitResponse = await fetch(`http://localhost:8080/submit`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Topics': JSON.stringify(['tm_uhrp']),
-            },
-            body: JSON.stringify({ beef: beef }),
-        });
+       return '' // TODO add something here or turn it void       
 
-       
-        if (!submitResponse.ok) {
-            throw new Error(`Failed to submit beef data. Status: ${submitResponse.status}`)
-        }
-
-        const submitResult = await submitResponse.json()
-        return submitResult.uhrpURL
-        */
-       return '' // TODO add something here or turn it void
     } catch (error) {
         console.error("Error publishing commitment:", error)
         throw error

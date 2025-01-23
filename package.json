@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Standard BSV project structure",
   "dependencies": {
+    "@bsv/lars": "^1.0.14",
     "@bsv/sdk": "^1.1.24",
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
@@ -13,6 +14,7 @@
     "@types/jest": "^29.5.11",
     "authrite-js": "^0.4.34",
     "copy-webpack-plugin": "^12.0.2",
+    "nanostore-publisher": "^0.2.36",
     "node-polyfill-webpack-plugin": "^4.1.0",
     "pushdrop": "^0.1.64",
     "react": "^18.3.1",
