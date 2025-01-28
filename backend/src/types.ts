@@ -1,6 +1,5 @@
 export interface UHRPRecord {
   fileHash: string
-  fileURL: string
   name: string
   description: string
   satoshis: number
@@ -10,7 +9,6 @@ export interface UHRPRecord {
   outputIndex: number
   retentionPeriod: number
   coverHash: string
-  coverURL: string
   createdAt: Date
 }
 

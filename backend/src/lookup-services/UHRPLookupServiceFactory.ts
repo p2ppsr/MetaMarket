@@ -38,20 +38,17 @@ class UHRPLookupService implements LookupService {
       const fields = decodedScript.fields
 
       const fileHash = fields[1]?.toString('utf8')
-      const fileURL = fields[2]?.toString('utf8')
-      const name = fields[3]?.toString('utf8')
-      const description = fields[4]?.toString('utf8')
-      const satoshis = Number(fields[5]?.toString('utf8'))
-      const creatorPublicKey = fields[6]?.toString('utf8')
-      const size = Number(fields[7]?.toString('utf8'))
+      const name = fields[2]?.toString('utf8')
+      const description = fields[3]?.toString('utf8')
+      const satoshis = Number(fields[4]?.toString('utf8'))
+      const creatorPublicKey = fields[5]?.toString('utf8')
+      const size = Number(fields[6]?.toString('utf8'))
       const retentionPeriod = Number(fields[8]?.toString('utf8'))
-      const coverHash = fields[9]?.toString('utf8')
-      const coverURL = fields[10]?.toString('utf8')
+      const coverHash = fields[8]?.toString('utf8')
 
       // Store the token fields for future lookup
       await this.storage.storeRecord(
         fileHash,
-        fileURL,
         name,
         description,
         satoshis,
@@ -60,8 +57,7 @@ class UHRPLookupService implements LookupService {
         txid,
         outputIndex,
         retentionPeriod,
-        coverHash,
-        coverURL
+        coverHash
       )
     } catch (error) {
       console.error('Failed to store record', error)

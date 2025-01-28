@@ -36,15 +36,9 @@ export default class UHRPTopicManager implements TopicManager {
             console.log('Invalid file hash length.')
             continue
           }
-          
-          // File URL
-          if (!fields[2] || fields[2].length === 0 || !fields[2].toString('utf8')) {
-            console.log('Invalid or missing file URL.')
-            continue
-          }
 
           // Name
-          if (fields[3].length === 0) {
+          if (fields[2].length === 0) {
             console.log('Name field is empty.')
             continue
           }
@@ -53,51 +47,45 @@ export default class UHRPTopicManager implements TopicManager {
           // (Optional validation can be added here if needed)
 
           // Satoshis
-          const satoshis = parseInt(fields[5].toString(), 10)
+          const satoshis = parseInt(fields[4].toString(), 10)
           if (isNaN(satoshis) || satoshis <= 0) {
             console.log('Invalid satoshis value.')
             continue
           }
 
           // Public Key
-          if (!fields[6] || fields[6].length === 0) {
+          if (!fields[5] || fields[5].length === 0) {
             console.log('Public key is missing.')
             continue
           }
           try {
-            PublicKey.fromString(fields[6].toString('utf8'))
+            PublicKey.fromString(fields[5].toString('utf8'))
           } catch {
             console.log('Invalid public key format.')
             continue
           }
 
           // File Size
-          const fileSize = parseInt(fields[7].toString(), 10)
+          const fileSize = parseInt(fields[6].toString(), 10)
           if (isNaN(fileSize) || fileSize <= 0) {
             console.log('Invalid file size.')
             continue
           }
 
           // Expiry Time
-          const expiryTime = parseInt(fields[8].toString(), 10)
+          const expiryTime = parseInt(fields[7].toString(), 10)
           if (isNaN(expiryTime) || expiryTime <= Date.now()) {
             console.log('Invalid expiry time.')
             continue
           }
 
           // Cover Image Hash
-          if (fields[9].length !== 52) {
+          if (fields[8].length !== 52) {
             console.log('Invalid cover image hash length.')
             continue
           }
 
-          // Cover Image URL
-          if (!fields[10] || fields[10].length === 0 || !fields[10].toString('utf8').startsWith('https://')) {
-            console.log('Invalid or missing cover image URL.')
-            continue
-          }
-
-          console.log('OUTPUT ADMISSED WOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOT UWU!!!!!!    ', fields[3].toString('utf8'))
+          console.log('OUTPUT ADMISSED WOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOT UWU!!!!!!    ', fields[3].toString('utf8')) // TODO
 
           admissibleOutputs.push(index)
         } catch (error) {

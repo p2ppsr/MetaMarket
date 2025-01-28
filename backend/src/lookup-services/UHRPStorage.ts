@@ -19,10 +19,9 @@ export class UHRPStorage {
    * @param {number} outputIndex index of the UTXO
    * @param {string} value - UHRP value to save
    */
-  async storeRecord(fileHash: string, fileURL: string, name: string, description: string, satoshis: number, creatorPublicKey: string, size: number, txid: string, outputIndex: number, retentionPeriod: number, coverHash: string, coverURL: string): Promise<void> {
+  async storeRecord(fileHash: string, name: string, description: string, satoshis: number, creatorPublicKey: string, size: number, txid: string, outputIndex: number, retentionPeriod: number, coverHash: string): Promise<void> {
     console.log("Storing record in MongoDB:", {
       fileHash,
-      fileURL,
       name,
       description,
       satoshis,
@@ -31,19 +30,15 @@ export class UHRPStorage {
       txid,
       outputIndex,
       retentionPeriod,
-      coverHash,
-      coverURL
+      coverHash
   })
 
   debugger
 
     try {
       // Insert new record
-
-
       await this.records.insertOne({
         fileHash,
-        fileURL,
         name,
         description,
         satoshis,
@@ -53,7 +48,6 @@ export class UHRPStorage {
         outputIndex,
         retentionPeriod,
         coverHash,
-        coverURL,
         createdAt: new Date()
       })
     } catch (error) {
