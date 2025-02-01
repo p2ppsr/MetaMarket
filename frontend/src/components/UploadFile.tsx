@@ -3,7 +3,7 @@ import React, { useState, type FormEvent, ChangeEvent } from "react"
 import { toast } from "react-toastify";
 import { publishCommitment } from "../utils/publishCommitment"
 import { getPublicKey } from "@babbage/sdk-ts";
-
+import { useNavigate } from "react-router-dom";
 const fetchPublicKey = async (): Promise<string> => {
   try {
     const publicKey = await getPublicKey({ identityKey: true });
@@ -15,6 +15,8 @@ const fetchPublicKey = async (): Promise<string> => {
 };
 
 const UploadFile = () => {
+  const navigate = useNavigate()
+
   const [isLoading, setIsLoading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileErrorMessage, setFileErrorMessage] = useState<string | null>(null)
@@ -112,7 +114,8 @@ const UploadFile = () => {
       }
 
       console.log(filehosting)
-      publishCommitment(filehosting)
+      await publishCommitment(filehosting)
+      navigate("/")
     } catch (e) {
       toast.error((e as Error).message);
       console.error(e);

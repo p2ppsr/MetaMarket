@@ -4,3 +4,8 @@ export interface KeyRecord {
     satoshis: number
     publicKey: string
 }
+
+export interface BalanceRecord {
+    publicKey: string
+    balance: number
+}

@@ -4,12 +4,15 @@ import axios from 'axios'
 import { Container, Typography, Box, Button } from '@mui/material'
 import Markdown from 'react-markdown'
 import { purchaseFile } from '../utils/purchaseFile'
-
-// FOR TESTING PURPOSES ONLY
+import PacketPay from '@packetpay/js'
 import { AuthriteClient } from 'authrite-js'
-
+import { errorMonitor } from 'events'
+import { download } from 'nanoseek'
+import { SymmetricKey } from '@bsv/sdk'
+import { Img } from 'uhrp-react'
 
 interface DetailsRecord {
+  fileHash: string
   name: string
   description: string
   satoshis: number
@@ -28,12 +31,13 @@ const Details: React.FC = () => {
   const [details, setDetails] = useState<DetailsRecord | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  const [decryptedFileURL, setDecryptedFileURL] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchDetails = async () => {
       try {
         const response = await axios.post('http://localhost:8080/lookup', {
-          service: 'ls_uhrp',
+          service: 'ls_market',
           query: {
             type: 'findDetails',
             value: {
@@ -45,6 +49,7 @@ const Details: React.FC = () => {
 
         const output = response.data.result[0]
         const data: DetailsRecord = {
+          fileHash: output.fileHash,
           name: output.name,
           description: output.description,
           satoshis: output.satoshis,
@@ -70,69 +75,65 @@ const Details: React.FC = () => {
 
   const handlePurchase = async () => {
     try {
+      if (!details) return
       setIsLoading(true)
 
-      console.log(purchaseFile({ test: 'uwu' }))
+      const fileHash = details.fileHash
+      if (!fileHash) {
+        console.error('No fileHash available to purchase!')
+        return
+      }
+      
+      console.log('File hash:', fileHash)
+
+      const authrite = new AuthriteClient('http://localhost:3000')
+
+      const keyUrl = `http://localhost:3000/purchase/${fileHash}`
+      const payResponse = await PacketPay(
+        keyUrl,
+        {
+          method: 'POST',
+          body: JSON.stringify({ fileHash }),
+          headers: { 'Content-Type': 'application/json' }
+        },
+        {
+          description: 'Pay for file purchase'
+        }
+      )
+
+      const purchaseResult = JSON.parse(Buffer.from(payResponse.body).toString('utf8'))
+      console.log(purchaseResult)
+
+      const encryptionKey = purchaseResult.encryptionKey
+      if (!encryptionKey) {
+        console.error('Purchase was successful, but no encryptionKey was returned.')
+        return
+      }
+
+      const { data: encryptedDataBuffer, mimeType } = await download({
+        UHRPUrl: fileHash
+      })
+      console.log('Downloaded file from UHRP, mimeType:', mimeType)
+      
+      // Decrypting the file
+      const symmetricKey = new SymmetricKey(encryptionKey, 'hex')
+      const encryptedBytes = Array.from(new Uint8Array(encryptedDataBuffer))
+      const decryptedBytes = symmetricKey.decrypt(encryptedBytes) as number[]
+
+      const blob = new Blob(
+        [Uint8Array.from(decryptedBytes)],
+        { type: 'model/stl' })
+      const fileUrl = URL.createObjectURL(blob)
+      setDecryptedFileURL(fileUrl)
     } catch (error) {
       console.error('Error during purchase:', error)
     } finally {
       setIsLoading(false)
     }
   }
-
-  const TESTINGHandleLookup = async () => {
-    try {
-      setIsLoading(true)
-
-      const authrite = new AuthriteClient('http://localhost:3000')
-
-      // Testing stuff here:
-      const body = { fileHash: 'yippee' }
-
-      const signedResponse = await authrite.createSignedRequest('/lookup', {
-        method: 'POST',
-        body,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-
-      console.log('Lookup response:', signedResponse)
-
-    } catch (error) {
-      console.error('Error during lookup:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const TESTINGHandleDeleteAll = async () => {
-    try {
-      setIsLoading(true)
-
-      const authrite = new AuthriteClient('http://localhost:3000')
-
-      const body = { fileHash: 'yippee'}
-
-      const Testing = await authrite.createSignedRequest('/delete', {
-        method: 'POST',
-        body,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      console.log('Delete response:', Testing)
-    } catch (error) {
-      console.error('Error during delete all:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   if (isLoading) {
     return <Typography>Loading...</Typography>
   }
-
   if (!details) {
     return (
       <Typography variant="h6" color="error">
@@ -140,20 +141,34 @@ const Details: React.FC = () => {
       </Typography>
     )
   }
-
   return (
     <Container>
+      {/* The cover image using your existing pattern (uhrp-react Img) */}
+      <Box mb={2}>
+        <Img
+          src={`uhrp:${details.coverHash}`}
+          style={{
+            width: '100%',
+            maxHeight: '300px',
+            objectFit: 'contain'
+          }}
+        />
+      </Box>
+
       <Typography variant="h4" gutterBottom>
         {details.name}
       </Typography>
+
       <Box mt={2} mb={3}>
         <Markdown>{details.description}</Markdown>
       </Box>
+
       <Box mt={3}>
         <Typography variant="body2" color="primary">
           Cost: {details.satoshis} Satoshis
         </Typography>
       </Box>
+
       <Button
         type="submit"
         variant="contained"
@@ -161,30 +176,17 @@ const Details: React.FC = () => {
         disabled={isLoading}
         onClick={handlePurchase}
       >
-        {isLoading ? "Purchasing..." : "Purchase"}
+        {isLoading ? 'Purchasing...' : 'Purchase File'}
       </Button>
 
-
-      {/** TESTING BUTTONS */}
-      <Button
-        type="submit"
-        variant="contained"
-        color="primary"
-        disabled={isLoading}
-        onClick={TESTINGHandleLookup}
-      >
-        {isLoading ? "TESTICLING..." : "TESTICLE"}
-      </Button>
-
-      <Button
-        type="submit"
-        variant="contained"
-        color="primary"
-        disabled={isLoading}
-        onClick={TESTINGHandleDeleteAll}
-      >
-        {isLoading ? "DeLeTiNg..." : "DELETE!!!"}
-      </Button>
+      {decryptedFileURL && (
+        <Box mt={4}>
+          <Typography variant="body1">Decrypted file ready for download:</Typography>
+          <a href={decryptedFileURL} download={`${details.name || 'download'}.stl`}>
+            Download Decrypted File
+          </a>
+        </Box>
+      )}
     </Container>
   )
 }

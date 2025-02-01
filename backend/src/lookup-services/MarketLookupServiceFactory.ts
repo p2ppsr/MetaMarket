@@ -1,23 +1,23 @@
 import { LookupService, LookupQuestion, LookupAnswer, LookupFormula } from '@bsv/overlay'
-import { UHRPStorage } from './UHRPStorage.js'
+import { MarketStorage } from './MarketStorage.js'
 import { Script, Utils } from '@bsv/sdk'
-import docs from './UHRPLookupDocs.md.js'
+import docs from './MarketLookupDocs.md.js'
 import { Db } from 'mongodb'
 import pushdrop from 'pushdrop'
 import { StoreReference, DetailsReference } from '../types.js'
 
 
 /**
- * Implements a UHRP lookup service
+ * Implements a Market lookup service
  *
  * @public
  */
-class UHRPLookupService implements LookupService {
+class MarketLookupService implements LookupService {
   /**
-   * Constructs a new UHRPLookupService instance
+   * Constructs a new MarketLookupService instance
    * @param storage - The storage instance to use for managing records
-   */ 
-  constructor(public storage: UHRPStorage) { }
+   */
+  constructor(public storage: MarketStorage) { }
 
   /**
    * Notifies the lookup service of a new output added.
@@ -31,10 +31,10 @@ class UHRPLookupService implements LookupService {
    * @throws Will throw an error if there is an issue with storing the record in the storage engine.
    */
   async outputAdded?(txid: string, outputIndex: number, outputScript: Script, topic: string): Promise<void> {
-    if (topic !== 'tm_uhrp') return
-    console.log( pushdrop.decode({ script: outputScript.toHex(), fieldFormat: 'buffer'}).fields)
+    if (topic !== 'tm_market') return
+    console.log(pushdrop.decode({ script: outputScript.toHex(), fieldFormat: 'buffer' }).fields)
     try {
-      const decodedScript = pushdrop.decode({ script: outputScript.toHex(), fieldFormat: 'buffer'})
+      const decodedScript = pushdrop.decode({ script: outputScript.toHex(), fieldFormat: 'buffer' })
       const fields = decodedScript.fields
 
       const fileHash = fields[1]?.toString('utf8')
@@ -72,7 +72,7 @@ class UHRPLookupService implements LookupService {
    * @param topic - The topic associated with the spent output
    */
   async outputSpent?(txid: string, outputIndex: number, topic: string): Promise<void> {
-    if (topic !== 'tm_uhrp') return
+    if (topic !== 'tm_market') return
     await this.storage.deleteRecord(txid, outputIndex)
   }
 
@@ -83,7 +83,7 @@ class UHRPLookupService implements LookupService {
    * @param topic - The topic associated with the deleted output
    */
   async outputDeleted?(txid: string, outputIndex: number, topic: string): Promise<void> {
-    if (topic !== 'tm_uhrp') return
+    if (topic !== 'tm_market') return
     await this.storage.deleteRecord(txid, outputIndex)
   }
 
@@ -94,23 +94,23 @@ class UHRPLookupService implements LookupService {
    */
   async lookup(question: LookupQuestion): Promise<LookupAnswer | LookupFormula> {
     try {
-      const query =  question.query
-      
+      const query = question.query
+
       // Validate query presence
       if (!query) {
         throw new Error('A valid query must be provided!');
       }
-  
+
       // Validate service
-      if (question.service !== 'ls_uhrp') {
+      if (question.service !== 'ls_market') {
         throw new Error('Lookup service not supported!');
       }
-  
+
       // Handle specific queries
       if (query === 'findAll') {
         return await this.storage.findAll();
       }
-  
+
       if (query === 'findStore') {
         const result: StoreReference[] = await this.storage.findStore();
         return {
@@ -118,20 +118,56 @@ class UHRPLookupService implements LookupService {
           result,
         };
       }
-  
+
       if (isFindDetailsQuery(query)) {
         const { txid, outputIndex } = query.value;
         if (!txid || outputIndex === undefined) {
           throw new Error('findDetails query must include txid and outputIndex.');
         }
-  
+
         const result: DetailsReference[] = await this.storage.findDetails(txid, outputIndex);
         return {
           type: 'freeform',
           result,
         };
       }
-  
+
+      if (isHashCheckQuery(query)) {
+        const { fileHash } = query.value
+        const result: boolean = await this.storage.isFileHashInDatabase(fileHash)
+        return {
+          type: 'freeform',
+          result
+        }
+      }
+
+      if (isUploaderFilesQuery(query)) {
+        const { publicKey } = query.value
+        const result = await this.storage.findByUploaderPublicKey(publicKey)
+        return {
+          type: 'freeform',
+          result
+        }
+      }
+
+      if (isDeleteFile(query)) {
+        const { txid, outputIndex } = query.value
+        await this.storage.deleteRecord(txid, outputIndex)
+        return {
+          type: 'freeform',
+          result: true
+        }
+      }
+
+      if (isNameSearchQuery(query)) {
+        const { name } = query.value
+        const results = await this.storage.findByName(name)
+        return {
+          type: 'freeform',
+          result: results
+        }
+      } 
+           
       throw new Error('Unknown query type');
     } catch (error) {
       console.error('Failed to process lookup query:', error);
@@ -166,7 +202,7 @@ class UHRPLookupService implements LookupService {
   }
 }
 
-function isFindDetailsQuery(query: any): query is { type: 'findDetails'; value: { txid: string, outputIndex: number} } {
+function isFindDetailsQuery(query: any): query is { type: 'findDetails'; value: { txid: string, outputIndex: number } } {
   return (
     typeof query === 'object' &&
     query.type === 'findDetails' &&
@@ -176,7 +212,44 @@ function isFindDetailsQuery(query: any): query is { type: 'findDetails'; value: 
   )
 }
 
+function isHashCheckQuery(query: any): query is { type: 'hashCheck'; value: { fileHash: string } } {
+  return (
+    typeof query === 'object' &&
+    query.type === 'hashCheck' &&
+    query.value &&
+    typeof query.value.fileHash === 'string'
+  );
+}
+
+function isUploaderFilesQuery(query: any): query is { type: 'findUploaderFiles', value: { publicKey: string } } {
+  return (
+    typeof query === 'object' &&
+    query.type === 'findUploaderFiles' &&
+    query.value &&
+    typeof query.value.publicKey === 'string'
+  )
+}
+
+function isDeleteFile(query: any): query is { type: 'deleteFile', value: { txid: string, outputIndex: number } } {
+  return (
+    typeof query === 'object' &&
+    query.type === 'deleteFile' &&
+    query.value &&
+    typeof query.value.txid === 'string' &&
+    typeof query.value.outputIndex === 'number'
+  )
+}
+
+function isNameSearchQuery(query: any): query is { type: 'findByName', value: { name: string } } {
+  return (
+    typeof query === 'object' &&
+    query.type === 'findByName' &&
+    query.value &&
+    typeof query.value.name === 'string'
+  )
+}
+
 // Factory function
-export default (db: Db): UHRPLookupService => {
-  return new UHRPLookupService(new UHRPStorage(db))
+export default (db: Db): MarketLookupService => {
+  return new MarketLookupService(new MarketStorage(db))
 }

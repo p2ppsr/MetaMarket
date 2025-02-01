@@ -13,6 +13,7 @@ const Layout: React.FC = () => {
                     <Button color="inherit" component={Link} to="/">Home</Button>
                     <Button color="inherit" component={Link} to="/upload-file">Upload File</Button>
                     <Button color="inherit" component={Link} to="/store">Store</Button>
+                    <Button color="inherit" component={Link} to="/account">Account</Button>
                 </Toolbar>
             </AppBar>
             <Toolbar />

@@ -34,7 +34,7 @@ export async function publishCommitment({
         const plaintext = new Uint8Array(fileBuf)
         const plaintextArray = Array.from(plaintext)
 
-        const encryptedData = symmetricKey.encrypt(plaintextArray, 'hex') as string
+        const encryptedData = symmetricKey.encrypt(plaintextArray)
 
         const blob = new Blob([Buffer.from(encryptedData)], {
             type: 'application/octet-stream'
@@ -44,7 +44,7 @@ export async function publishCommitment({
         })
         
 
-        // Storing the file on the UHRP host
+        // Storing the file on the Market host
         const retentionPeriod = expiration * 24 * 60
 
         const stl = await publishFile({
@@ -54,7 +54,7 @@ export async function publishCommitment({
 
         console.log(`STL Hash: ${stl.hash}, Url: ${stl.publicURL}`)
 
-        // Storing the cover image on UHRP
+        // Storing the cover image on Market
         const cover = await publishFile({
             file: coverImage,
             retentionPeriod
@@ -78,14 +78,14 @@ export async function publishCommitment({
             ]
         })
 
-        console.log(`Script values:\n1UHRPYnMHPuQ5Tgb3AF8JXqwKkmZVy5hG\n${stl.hash}\n${name}\n${description}\n${satoshis}\n${publicKey}\n${file.size}\n${expiryTime}\n${cover.hash}`) // TODO REMOOOOOOOVE!!
+        console.log(`Script values:\nUHRPYnMHPuQ5Tgb3AF8JXqwKkmZVy5hG\n${stl.hash}\n${name}\n${description}\n${satoshis}\n${publicKey}\n${file.size}\n${expiryTime}\n${cover.hash}`) // TODO REMOOOOOOOVE!!
 
         const newToken = await createAction({
             outputs: [{
                 satoshis: 1,
                 script: lockingScript
             }],
-            description: 'publish UHRP token'
+            description: 'publish market token'
         })
 
         const beef = toBEEFfromEnvelope({
@@ -97,7 +97,7 @@ export async function publishCommitment({
         console.log(beef)
         const taggedBEEF: TaggedBEEF = {
             beef,
-            topics: ['tm_uhrp']
+            topics: ['tm_market']
         }
 
         // Temp Broadcasting!
@@ -126,7 +126,7 @@ export async function publishCommitment({
         
         console.log('Key server response:', keyServerResponse.data)
         
-        return '' // TODO add something here or turn it void       
+        return ''        // TODO add something here or turn it void       
 
     } catch (error) {
         console.error('Error publishing commitment:', error)

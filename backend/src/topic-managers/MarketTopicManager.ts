@@ -1,9 +1,9 @@
 import { AdmittanceInstructions, TopicManager } from '@bsv/overlay'
 import { Transaction, ProtoWallet, Utils, PublicKey } from '@bsv/sdk'
-import docs from './UHRPTopicDocs.md.js'
+import docs from './MarketTopicDocs.md.js'
 import pushdrop from 'pushdrop'
 
-export default class UHRPTopicManager implements TopicManager {
+export default class MarketTopicManager implements TopicManager {
   /**
    * Identify if the outputs are admissible depending on the particular protocol requirements
    * @param beef - The transaction data in BEEF format

@@ -5,6 +5,7 @@ import Home from './pages/Home'
 import UploadFilePage from './pages/UploadFilePage'
 import Store from './pages/Store'
 import Details from './pages/Details'
+import Account from './pages/Account'
 
 const App: React.FC = () => {
   return (
@@ -15,6 +16,7 @@ const App: React.FC = () => {
           <Route path="store" element={<Store />} />
           <Route path="upload-file" element={<UploadFilePage />} />
           <Route path=":txid/:outputIndex" element={<Details />} />
+          <Route path="account" element={<Account />}></Route>
         </Route>
       </Routes>
     </Router>

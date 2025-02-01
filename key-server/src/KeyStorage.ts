@@ -1,20 +1,23 @@
 import { Collection, Db, DeleteResult } from 'mongodb';
-import { KeyRecord } from './types.js';
+import { KeyRecord, BalanceRecord } from './types.js';
 import dotenv from 'dotenv'
 
 dotenv.config()
 
-const COLLECTION_NAME = process.env.COLLECTION_NAME as string
+const KEY_COLLECTION_NAME = process.env.KEY_COLLECTION_NAME as string
+const BALANCE_COLLECTION_NAME = process.env.BALANCE_COLLECTION_NAME as string
 
 export class KeyStorage {
-  private readonly records: Collection<KeyRecord>;
+  private readonly records: Collection<KeyRecord>
+  private readonly balances: Collection<BalanceRecord>
 
   /**
    * Constructs a new KeyStorage instance
    * @param {Db} db - connected mongo database instance
    */
   constructor(private readonly db: Db) {
-    this.records = db.collection<KeyRecord>(COLLECTION_NAME);
+    this.records = db.collection<KeyRecord>(KEY_COLLECTION_NAME)
+    this.balances = db.collection<BalanceRecord>(BALANCE_COLLECTION_NAME)
   }
 
   /**
@@ -50,10 +53,10 @@ export class KeyStorage {
     }
   }
 
-    /**
-   * Delete a matching record
-   * @param {string} fileHash The file hash
-   */
+  /**
+ * Delete a matching record
+ * @param {string} fileHash The file hash
+ */
   async deleteRecord(fileHash: string): Promise<void> {
     await this.records.deleteOne({ fileHash })
   }
@@ -89,9 +92,41 @@ export class KeyStorage {
     }
   }
 
+  /**
+ * Increments the given publicKey's balance by `amount`.
+ * If no entry exists, creates one with the initial balance = amount.
+ */
+  async incrementBalance(publicKey: string, amount: number): Promise<void> {
+    if (amount <= 0) return
+
+    await this.balances.updateOne(
+      { publicKey },
+      { $inc: { balance: amount } },
+      { upsert: true }
+    )
+  }
+
+  /**
+   * Returns the current balance for a given publicKey (or 0 if none found).
+   */
+  async getBalance(publicKey: string): Promise<number> {
+    const doc = await this.balances.findOne({ publicKey })
+    return doc?.balance || 0
+  }
+
+  /**
+   * Sets the publicKey's balance to a new value (e.g., after a withdrawal).
+   */
+  async setBalance(publicKey: string, newBalance: number): Promise<void> {
+    await this.balances.updateOne(
+      { publicKey },
+      { $set: { balance: newBalance } },
+      { upsert: true }
+    )
+  }
+
   // FOR TESTING PURPOSES TODO!!!!!!!!!! TODO TODO TODO
   async deleteAll(): Promise<DeleteResult> {
     return await this.records.deleteMany({})
   }
-
 }

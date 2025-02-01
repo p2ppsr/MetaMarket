@@ -1,4 +1,4 @@
-export interface UHRPRecord {
+export interface MarketRecord {
   fileHash: string
   name: string
   description: string
@@ -26,6 +26,7 @@ export interface StoreReference {
 }
 
 export interface DetailsReference {
+  fileHash: string
   name: string
   description: string
   satoshis: number
@@ -34,6 +35,16 @@ export interface DetailsReference {
   txid: string
   outputIndex: number
   retentionPeriod: number
+  coverHash: string
+  createdAt: Date
+}
+
+export interface AccountReference {
+  fileHash: string
+  name: string
+  satoshis: number
+  txid: string
+  outputIndex: number
   coverHash: string
   createdAt: Date
 }

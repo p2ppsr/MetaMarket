@@ -1,3 +1,3 @@
-export { default as UHRPLookupServiceFactory } from './src/lookup-services/UHRPLookupServiceFactory.js'
-export { default as UHRPTopicManager } from './src/topic-managers/UHRPTopicDocs.md.js'
+export { default as MarketLookupServiceFactory } from './src/lookup-services/MarketLookupServiceFactory.js'
+export { default as MarketTopicManager } from './src/topic-managers/MarketTopicDocs.md.js'
 export * from './src/types.js'
