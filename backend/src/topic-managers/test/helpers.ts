@@ -1,3 +1,4 @@
+/*
 import pushdrop from 'pushdrop';
 import { createAction, toBEEFfromEnvelope, EnvelopeEvidenceApi } from '@babbage/sdk-ts';
 
@@ -48,3 +49,4 @@ export async function createMockBEEF({
 
   return beef;
 }
+*/

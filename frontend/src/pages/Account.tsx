@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { Container, Typography, Box, Button, Grid, Paper } from '@mui/material'
-import axios from 'axios'
-import { Img } from 'uhrp-react'
-import { getPublicKey, submitDirectTransaction } from '@babbage/sdk-ts'
-import { AuthriteClient } from 'authrite-js'
+import { Img } from '@bsv/uhrp-react'
+import { AtomicBEEF, AuthFetch, Utils, WalletClient } from '@bsv/sdk'
+
 
 interface UploadedFile {
     fileHash: string
@@ -15,32 +14,48 @@ interface UploadedFile {
     timesBought?: number
 }
 
+interface BalanceResponse {
+    balance: number
+}
+
+interface WithdrawResponse {
+    transaction: string
+    derivationPrefix: string
+    derivationSuffix: string
+    amount: number
+    senderIdentityKey: string
+}
+
 const Account: React.FC = () => {
     const [balance, setBalance] = useState<number>(0)
     const [files, setFiles] = useState<UploadedFile[]>([])
     const [loading, setLoading] = useState(false)
 
-    const authrite = new AuthriteClient('http://localhost:3000')
+    const wallet = new WalletClient('auto', 'localhost')
+    const authFetch = new AuthFetch(wallet)
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true)
             try {
-                const publicKey = await getPublicKey({ identityKey: true })
+                const publicKey = (await wallet.getPublicKey({ identityKey: true })).publicKey
 
-                const signedResponse = await authrite.createSignedRequest('/balance', {
+                const signedResponse = await authFetch.fetch('/balance', {
                     method: 'POST',
-                    publicKey,
+                    body: publicKey,
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 })
+                
+                if (!signedResponse) {
+                    throw new Error('Error fetching account balance')
+                }
+                const { balance }  = signedResponse as unknown as BalanceResponse
 
-                setBalance(signedResponse.balance || 0)
+                setBalance(balance || 0)
 
-                console.log(publicKey)
-
-                const filesResponse = await axios.post('http://localhost:8080/lookup', {
+                const body = JSON.stringify({
                     service: 'ls_market',
                     query: {
                         type: 'findUploaderFiles',
@@ -49,13 +64,13 @@ const Account: React.FC = () => {
                         }
                     }
                 })
-                
-                console.log(filesResponse)
-                
-                const results: UploadedFile[] = filesResponse.data.result || []
-                
-                console.log('results:', results)
-                
+
+                const filesResponse = await fetch('http://localhost:8080/lookup', {
+                    method: 'POST',
+                    body
+                })
+
+                const results: UploadedFile[] = (await filesResponse.json()).data.result || []           
                 setFiles(results)
             } catch (err) {
                 console.error('Error fetching account data:', err)
@@ -69,42 +84,38 @@ const Account: React.FC = () => {
     const handleWithdraw = async () => {
         setLoading(true)
         try {
-            const publicKey = await getPublicKey({ identityKey: true })
+            const publicKey = await wallet.getPublicKey({ identityKey: true })
 
-            const response = await authrite.createSignedRequest('/withdraw', {
+            const response = await authFetch.fetch('/withdraw', {
                 method: 'POST',
-                publicKey,
+                body: publicKey,
                 headers: {
                     'Content-Type': 'application/json'
                 }
             })
-
-            if (response.status === 'error') {
+            if (!response.ok) {
                 console.error('Error parsing balance result')
                 return
             }
 
-            const processedTx = await submitDirectTransaction({
-                protocol: "3241645161d8",
-                transaction: {
-                    ...response.transaction,
-                    outputs: [
-                        {
-                            vout: 0,
-                            satoshis: response.amount,
-                            derivationSuffix: response.derivationSuffix
-                        }
-                    ]
-                },
-                senderIdentityKey: response.senderIdentityKey,
-                note: "Payment for withdrawal",
-                derivationPrefix: response.derivationPrefix,
-                amount: response.amount
-            })
+            const paymentData = response.json() as unknown as WithdrawResponse
             
+            const processedTx = await wallet.internalizeAction({ 
+                tx: Utils.toArray(paymentData.transaction, 'base64') as AtomicBEEF,
+                outputs: [{
+                    paymentRemittance: {
+                        derivationPrefix: paymentData.derivationPrefix,
+                        derivationSuffix: paymentData.derivationSuffix,
+                        senderIdentityKey: paymentData.senderIdentityKey
+                    },
+                    outputIndex: 0,
+                    protocol: 'wallet payment'
+                }],
+                description: '' //TODO
+            })
+        
             console.log('Withdraw successful!', processedTx)
 
-            
             setBalance(0)
         } catch (err) {
             console.error('Error when withdrawing:', err)
@@ -116,15 +127,18 @@ const Account: React.FC = () => {
     const handleDeleteFile = async (txid: string, outputIndex: number) => {
         setLoading(true)
         try {
-            await axios.post('http://localhost:8080/lookup', {
-                service: 'ls_market',
-                query: {
-                    type: 'deleteFile',
-                    value: { txid, outputIndex }
-                }
+            const response = await fetch('http://localhost:8080/lookup', {
+                method: 'POST',
+                body: JSON.stringify({
+                    service: 'ls_market',
+                    query: {
+                        type: 'deleteFile',
+                        value: { txid, outputIndex }
+                    }
+                })
             })
-
-            console.log("Queried:", )
+            const data = await response.json()
+            console.log("Queried:", data) // TODO
             
             // Delete
             setFiles(prev => prev.filter(f => !(f.txid === txid && f.outputIndex === outputIndex)))

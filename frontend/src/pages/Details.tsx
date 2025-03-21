@@ -1,15 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import axios from 'axios'
 import { Container, Typography, Box, Button } from '@mui/material'
 import Markdown from 'react-markdown'
-import { purchaseFile } from '../utils/purchaseFile'
-import PacketPay from '@packetpay/js'
-import { AuthriteClient } from 'authrite-js'
-import { errorMonitor } from 'events'
-import { download } from 'nanoseek'
-import { SymmetricKey } from '@bsv/sdk'
-import { Img } from 'uhrp-react'
+import { AuthFetch, SymmetricKey, WalletClient, StorageDownloader } from '@bsv/sdk'
+import { Img } from '@bsv/uhrp-react'
 
 interface DetailsRecord {
   fileHash: string
@@ -36,18 +30,24 @@ const Details: React.FC = () => {
   useEffect(() => {
     const fetchDetails = async () => {
       try {
-        const response = await axios.post('http://localhost:8080/lookup', {
-          service: 'ls_market',
-          query: {
-            type: 'findDetails',
-            value: {
-              txid,
-              outputIndex: parseInt(outputIndex || '0', 10),
+
+
+        const response = await fetch('http://localhost:8080/lookup', {
+          method: 'POST',
+          body: JSON.stringify({
+            service: 'ls_market',
+            query: {
+              type: 'findDetails',
+              value: {
+                txid,
+                outputIndex: parseInt(outputIndex || '0', 10)
+              }
             }
-          }
+          })
         })
 
-        const output = response.data.result[0]
+         
+        const output = (await response.json()).data.result[0]
         const data: DetailsRecord = {
           fileHash: output.fileHash,
           name: output.name,
@@ -83,26 +83,27 @@ const Details: React.FC = () => {
         console.error('No fileHash available to purchase!')
         return
       }
-      
+
       console.log('File hash:', fileHash)
 
-      const authrite = new AuthriteClient('http://localhost:3000')
+      const wallet = new WalletClient('auto', 'localohst')
+      const authFetch = new AuthFetch(wallet)
 
       const keyUrl = `http://localhost:3000/purchase/${fileHash}`
-      const payResponse = await PacketPay(
+      const payResponse = await authFetch.fetch(
         keyUrl,
         {
           method: 'POST',
           body: JSON.stringify({ fileHash }),
           headers: { 'Content-Type': 'application/json' }
-        },
-        {
-          description: 'Pay for file purchase'
         }
       )
 
-      const purchaseResult = JSON.parse(Buffer.from(payResponse.body).toString('utf8'))
-      console.log(purchaseResult)
+      if (!payResponse.ok) {
+        console.error('Failed to complete purchase:', await payResponse.text())
+      }
+
+      const purchaseResult = await payResponse.json()
 
       const encryptionKey = purchaseResult.encryptionKey
       if (!encryptionKey) {
@@ -110,15 +111,13 @@ const Details: React.FC = () => {
         return
       }
 
-      const { data: encryptedDataBuffer, mimeType } = await download({
-        UHRPUrl: fileHash
-      })
+      const storageDownloader = new StorageDownloader()
+      const { data: encryptedBytes, mimeType } = await storageDownloader.download(fileHash) // TODO url?
       console.log('Downloaded file from UHRP, mimeType:', mimeType)
-      
+
       // Decrypting the file
       const symmetricKey = new SymmetricKey(encryptionKey, 'hex')
-      const encryptedBytes = Array.from(new Uint8Array(encryptedDataBuffer))
-      const decryptedBytes = symmetricKey.decrypt(encryptedBytes) as number[]
+      const decryptedBytes = symmetricKey.decrypt(encryptedBytes) as number[] // test
 
       const blob = new Blob(
         [Uint8Array.from(decryptedBytes)],

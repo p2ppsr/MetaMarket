@@ -16,7 +16,7 @@ const App: React.FC = () => {
           <Route path="store" element={<Store />} />
           <Route path="upload-file" element={<UploadFilePage />} />
           <Route path=":txid/:outputIndex" element={<Details />} />
-          <Route path="account" element={<Account />}></Route>
+          <Route path="account" element={<Account />} />
         </Route>
       </Routes>
     </Router>

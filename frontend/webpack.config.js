@@ -31,7 +31,8 @@ module.exports = {
       "http": require.resolve("stream-http"),
       "https": require.resolve("https-browserify"),
       "os": require.resolve("os-browserify/browser"),
-      "url": require.resolve("url/")
+      "url": require.resolve("url/"),
+      "buffer": require.resolve("buffer/")
     }
   },
   plugins: [
