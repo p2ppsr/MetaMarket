@@ -2,17 +2,18 @@ import { Container, Box, Typography, Button, Input, TextField, Paper, Collapse }
 import React, { useState, type FormEvent, ChangeEvent } from "react"
 import { toast } from "react-toastify";
 import { publishCommitment } from "../utils/publishCommitment"
-import { getPublicKey } from "@babbage/sdk-ts";
+import { WalletClient } from "@bsv/sdk"
 import { useNavigate } from "react-router-dom";
-const fetchPublicKey = async (): Promise<string> => {
+const fetchPublicKey = async (): Promise<string> =>  {
   try {
-    const publicKey = await getPublicKey({ identityKey: true });
-    return publicKey;
+    const client = new WalletClient()
+    const publicKey = await client.getPublicKey({ identityKey: true });
+    return publicKey.publicKey;
   } catch (error) {
     console.error("Error fetching public key:", error);
     throw new Error("MetaNet Identity is missing. Please ensure you have the MetaNet Client installed and properly configured.")
   }
-};
+}
 
 const UploadFile = () => {
   const navigate = useNavigate()

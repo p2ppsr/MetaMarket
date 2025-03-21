@@ -1,10 +1,4 @@
-import { publishFile } from 'nanostore-publisher'
-import pushdrop from 'pushdrop'
-import { SymmetricKey, TaggedBEEF } from '@bsv/sdk'
-import { createAction, EnvelopeEvidenceApi, toBEEFfromEnvelope } from '@babbage/sdk-ts'
-import { HTTPSOverlayBroadcastFacilitator } from './tempSHIPBroadcaster'
-import { AuthriteClient } from 'authrite-js'
-
+import { SymmetricKey, TaggedBEEF, StorageUploader, WalletClient, Utils, PushDrop, TopicBroadcaster, Transaction, AuthFetch } from '@bsv/sdk'
 
 export async function publishCommitment({
     file,
@@ -24,108 +18,108 @@ export async function publishCommitment({
     coverImage: File
 }): Promise<string> {
     try {
-        const serverURL = 'https://nanostore.babbage.systems'
-        
+        const storageURL = 'https://nanostore.babbage.systems'
+
         // Encrypting STL File
         const symmetricKey = SymmetricKey.fromRandom()
-        console.log(`Generated Symmetric Key: ${symmetricKey.toHex()}`)  // TODO
 
-        const fileBuf = await file.arrayBuffer()
-        const plaintext = new Uint8Array(fileBuf)
-        const plaintextArray = Array.from(plaintext)
+        const fileArray = Array.from(new Uint8Array(await file.arrayBuffer()))
+        const encryptedFile = symmetricKey.encrypt(fileArray) as number[]
 
-        const encryptedData = symmetricKey.encrypt(plaintextArray)
+        const uploadableFile = {
+            data: encryptedFile,
+            type: file.type
+        }
 
-        const blob = new Blob([Buffer.from(encryptedData)], {
-            type: 'application/octet-stream'
-        })
-        const encryptedFile = new File([blob], 'encryptedSTL', {
-            type: 'application/octet-stream'
-        })
-        
+        if (!uploadableFile) {
+            throw new Error('Error uploading STL file')
+        }
 
         // Storing the file on the Market host
         const retentionPeriod = expiration * 24 * 60
 
-        const stl = await publishFile({
-            file: encryptedFile,
+        const wallet = new WalletClient('auto', 'localhost')
+        const storageUploader = new StorageUploader({ storageURL, wallet })
+
+        const stl = await storageUploader.publishFile({
+            file: uploadableFile,
             retentionPeriod
         })
+        console.log(`STL File Url: ${stl.uhrpURL}`)
 
-        console.log(`STL Hash: ${stl.hash}, Url: ${stl.publicURL}`)
-
+        const coverArray = Array.from(new Uint8Array(await coverImage.arrayBuffer()))
+        const uploadableCover = {
+            data: coverArray,
+            type: coverImage.type
+        }
         // Storing the cover image on Market
-        const cover = await publishFile({
-            file: coverImage,
+        const cover = await storageUploader.publishFile({
+            file: uploadableCover,
             retentionPeriod
         })
 
-        console.log(`Cover Image Hash: ${cover.hash}, URL ${cover.publicURL}`)
+        console.log(`Cover Image URL ${cover.uhrpURL}`)
 
         const expiryTime = Date.now() + (expiration * 60 * 60 * 24 * 1000)
 
-        const lockingScript = await pushdrop.create({
-            fields: [
-                Buffer.from('1UHRPYnMHPuQ5Tgb3AF8JXqwKkmZVy5hG', 'utf8'),
-                Buffer.from(stl.hash, 'utf8'),
-                Buffer.from(name, 'utf8'),
-                Buffer.from(description, 'utf8'),
-                Buffer.from('' + satoshis, 'utf8'),
-                Buffer.from(publicKey, 'utf8'),
-                Buffer.from('' + file.size, 'utf8'),
-                Buffer.from('' + expiryTime, 'utf8'),
-                Buffer.from(cover.hash, 'utf8'),
-            ]
-        })
+        const fields = [
+            Utils.toArray(stl.uhrpURL, 'utf8'),
+            Utils.toArray(name, 'utf8'),
+            Utils.toArray(description, 'utf8'),
+            Utils.toArray('' + satoshis, 'utf8'),
+            Utils.toArray(publicKey, 'utf8'),
+            Utils.toArray('' + file.size, 'utf8'),
+            Utils.toArray('' + expiryTime, 'utf8'),
+            Utils.toArray(cover.uhrpURL, 'utf8'),
+        ]
+        const pushdrop = new PushDrop(wallet)
+        const lockingScript = await pushdrop.lock(
+            fields,
+            [2, 'metamarket'],
+            '1',
+            'anyone',
+            true
+        )
 
-        console.log(`Script values:\nUHRPYnMHPuQ5Tgb3AF8JXqwKkmZVy5hG\n${stl.hash}\n${name}\n${description}\n${satoshis}\n${publicKey}\n${file.size}\n${expiryTime}\n${cover.hash}`) // TODO REMOOOOOOOVE!!
+        console.log(`Script values:\nUHRPYnMHPuQ5Tgb3AF8JXqwKkmZVy5hG\n${stl.uhrpURL}\n${name}\n${description}\n${satoshis}\n${publicKey}\n${file.size}\n${expiryTime}\n${cover.uhrpURL}`) // TODO REMOOOOOOOVE!!
 
-        const newToken = await createAction({
+        const { tx } = await wallet.createAction({
             outputs: [{
+                lockingScript: lockingScript.toHex(),
                 satoshis: 1,
-                script: lockingScript
+                outputDescription: 'metamarket upload token'
             }],
-            description: 'publish market token'
+            description: 'publish to metamarket UHRP'
         })
-
-        const beef = toBEEFfromEnvelope({
-            rawTx: newToken.rawTx! as string,
-            inputs: newToken.inputs! as Record<string, EnvelopeEvidenceApi>,
-            txid: newToken.txid
-        }).beef
-
-        console.log(beef)
-        const taggedBEEF: TaggedBEEF = {
-            beef,
-            topics: ['tm_market']
+        if (!tx) {
+            throw new Error('Error creating action')
         }
 
-        // Temp Broadcasting!
-        const broadcaster = new HTTPSOverlayBroadcastFacilitator()
-        const backendResponse = broadcaster.send(`http://localhost:8080`, taggedBEEF)
-
+        const broadcaster = new TopicBroadcaster(['tm_market'], {
+            networkPreset: window.location.hostname === 'localhost' ? 'local' : 'mainnet'
+        })
+        const backendResponse = broadcaster.broadcast(Transaction.fromAtomicBEEF(tx))
         console.log('Backed server response:', backendResponse)
 
         // Uploading encryption key to key server
-        const authrite = new AuthriteClient('http://localhost:3000')
+        const authFetch = new AuthFetch(wallet)
         const body = {
-            fileHash: stl.hash,
+            fileHash: stl.uhrpURL,
             encryptionKey: symmetricKey.toHex(),
             satoshis,
             publicKey
         }
 
-        const keyServerResponse = await authrite.createSignedRequest('/submit', {
+        const keyServerResponse = await authFetch.fetch('/submit', {
             method: 'POST',
             body,
             headers: {
-              'Content-Type': 'application/json'
+                'Content-Type': 'application/json'
             }
-          })
-    
-        
-        console.log('Key server response:', keyServerResponse.data)
-        
+        })
+
+        console.log('Key server response:', await keyServerResponse.json())
+
         return ''        // TODO add something here or turn it void       
 
     } catch (error) {

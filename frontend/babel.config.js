@@ -1,5 +1,5 @@
 module.exports = {
-  presets: [
+presets: [
     "@babel/preset-env",
     "@babel/preset-react"
   ],
@@ -8,4 +8,4 @@ module.exports = {
     "@babel/plugin-proposal-private-methods",
     "@babel/plugin-syntax-import-attributes"
   ]
-};
+}
