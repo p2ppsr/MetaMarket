@@ -2,11 +2,12 @@ import { Container, Box, Typography, Button, Input, TextField, Paper, Collapse }
 import React, { useState, type FormEvent, ChangeEvent } from "react"
 import { toast } from "react-toastify";
 import { publishCommitment } from "../utils/publishCommitment"
-import { getPublicKey } from "@babbage/sdk-ts";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom"
+import { PrivateKey } from "@bsv/sdk";
+
 const fetchPublicKey = async (): Promise<string> => {
   try {
-    const publicKey = await getPublicKey({ identityKey: true });
+    const publicKey = await PrivateKey.fromRandom()
     return publicKey;
   } catch (error) {
     console.error("Error fetching public key:", error);

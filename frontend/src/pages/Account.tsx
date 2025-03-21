@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { Container, Typography, Box, Button, Grid, Paper } from '@mui/material'
 import axios from 'axios'
-import { Img } from 'uhrp-react'
-import { getPublicKey, submitDirectTransaction } from '@babbage/sdk-ts'
-import { AuthriteClient } from 'authrite-js'
+import { Img } from '@bsv/uhrp-react' // this is okay, it's a part of the new stuff
+import { getPublicKey, submitDirectTransaction } from '@babbage/sdk-ts' // REMOVE!
+import { AuthFetch, WalletClient } from '@bsv/sdk'
 
 interface UploadedFile {
     fileHash: string
@@ -20,15 +20,16 @@ const Account: React.FC = () => {
     const [files, setFiles] = useState<UploadedFile[]>([])
     const [loading, setLoading] = useState(false)
 
-    const authrite = new AuthriteClient('http://localhost:3000')
+    const wallet = new WalletClient('auto', 'localhost')
+    const authFetch = new AuthFetch(wallet)
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true)
             try {
-                const publicKey = await getPublicKey({ identityKey: true })
+                const publicKey = await getPublicKey({ identityKey: true }) // update!!!
 
-                const signedResponse = await authrite.createSignedRequest('/balance', {
+                const signedResponse = await authFetch.fetch('/balance', {
                     method: 'POST',
                     publicKey,
                     headers: {
@@ -36,7 +37,8 @@ const Account: React.FC = () => {
                     }
                 })
 
-                setBalance(signedResponse.balance || 0)
+
+                setBalance(signedResponse.balance || 0) // Property 'balance' does not exist on type 'Response'.ts(2339)
 
                 console.log(publicKey)
 
@@ -69,9 +71,9 @@ const Account: React.FC = () => {
     const handleWithdraw = async () => {
         setLoading(true)
         try {
-            const publicKey = await getPublicKey({ identityKey: true })
+            const publicKey = await getPublicKey({ identityKey: true }) // update!
 
-            const response = await authrite.createSignedRequest('/withdraw', {
+            const response = await authrite.createSignedRequest('/withdraw', { // update please!
                 method: 'POST',
                 publicKey,
                 headers: {
