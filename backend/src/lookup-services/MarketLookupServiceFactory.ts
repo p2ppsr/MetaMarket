@@ -37,18 +37,18 @@ class MarketLookupService implements LookupService {
       const decodedScript = pushdrop.decode({ script: outputScript.toHex(), fieldFormat: 'buffer' })
       const fields = decodedScript.fields
 
-      const fileHash = fields[1]?.toString('utf8')
-      const name = fields[2]?.toString('utf8')
-      const description = fields[3]?.toString('utf8')
-      const satoshis = Number(fields[4]?.toString('utf8'))
-      const creatorPublicKey = fields[5]?.toString('utf8')
-      const size = Number(fields[6]?.toString('utf8'))
-      const retentionPeriod = Number(fields[8]?.toString('utf8'))
-      const coverHash = fields[8]?.toString('utf8')
+      const uhrpUrl = fields[0]?.toString('utf8')
+      const name = fields[1]?.toString('utf8')
+      const description = fields[2]?.toString('utf8')
+      const satoshis = Number(fields[3]?.toString('utf8'))
+      const creatorPublicKey = fields[4]?.toString('utf8')
+      const size = Number(fields[5]?.toString('utf8'))
+      const retentionPeriod = Number(fields[6]?.toString('utf8'))
+      const coverUrl = fields[7]?.toString('utf8')
 
       // Store the token fields for future lookup
       await this.storage.storeRecord(
-        fileHash,
+        uhrpUrl,
         name,
         description,
         satoshis,
@@ -57,7 +57,7 @@ class MarketLookupService implements LookupService {
         txid,
         outputIndex,
         retentionPeriod,
-        coverHash
+        coverUrl
       )
     } catch (error) {
       console.error('Failed to store record', error)
@@ -95,7 +95,7 @@ class MarketLookupService implements LookupService {
   async lookup(question: LookupQuestion): Promise<LookupAnswer | LookupFormula> {
     try {
       const query = question.query
-
+            
       // Validate query presence
       if (!query) {
         throw new Error('A valid query must be provided!');
@@ -115,7 +115,7 @@ class MarketLookupService implements LookupService {
         const result: StoreReference[] = await this.storage.findStore();
         return {
           type: 'freeform',
-          result,
+          result: result,
         };
       }
 
@@ -132,9 +132,9 @@ class MarketLookupService implements LookupService {
         };
       }
 
-      if (isHashCheckQuery(query)) {
-        const { fileHash } = query.value
-        const result: boolean = await this.storage.isFileHashInDatabase(fileHash)
+      if (isUrlCheckQuery(query)) {
+        const { fileUrl } = query.value
+        const result: boolean = await this.storage.isFileUrlInDatabase(fileUrl)
         return {
           type: 'freeform',
           result
@@ -212,12 +212,12 @@ function isFindDetailsQuery(query: any): query is { type: 'findDetails'; value: 
   )
 }
 
-function isHashCheckQuery(query: any): query is { type: 'hashCheck'; value: { fileHash: string } } {
+function isUrlCheckQuery(query: any): query is { type: 'urlCheck'; value: { fileUrl: string } } {
   return (
     typeof query === 'object' &&
-    query.type === 'hashCheck' &&
+    query.type === 'urlCheck' &&
     query.value &&
-    typeof query.value.fileHash === 'string'
+    typeof query.value.fileUrl === 'string'
   );
 }
 

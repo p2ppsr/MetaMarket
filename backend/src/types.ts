@@ -1,5 +1,5 @@
 export interface MarketRecord {
-  fileHash: string
+  fileUrl: string
   name: string
   description: string
   satoshis: number
@@ -8,7 +8,7 @@ export interface MarketRecord {
   txid: string
   outputIndex: number
   retentionPeriod: number
-  coverHash: string
+  coverUrl: string
   createdAt: Date
 }
 
@@ -20,13 +20,13 @@ export interface UTXOReference {
 export interface StoreReference {
   name: string
   satoshis: number
-  coverHash: string
+  coverUrl: string
   txid: string
   outputIndex: number
 }
 
 export interface DetailsReference {
-  fileHash: string
+  fileUrl: string
   name: string
   description: string
   satoshis: number
@@ -35,16 +35,16 @@ export interface DetailsReference {
   txid: string
   outputIndex: number
   retentionPeriod: number
-  coverHash: string
+  coverUrl: string
   createdAt: Date
 }
 
 export interface AccountReference {
-  fileHash: string
+  fileUrl: string
   name: string
   satoshis: number
   txid: string
   outputIndex: number
-  coverHash: string
+  coverUrl: string
   createdAt: Date
 }
