@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Container, Typography, Box, Button } from '@mui/material'
 import Markdown from 'react-markdown'
-import { AuthFetch, SymmetricKey, WalletClient, StorageDownloader } from '@bsv/sdk'
+import { AuthFetch, SymmetricKey, WalletClient, StorageDownloader, LookupResolver } from '@bsv/sdk'
 import { Img } from '@bsv/uhrp-react'
+import constants from '../constants'
 
 interface DetailsRecord {
-  fileHash: string
+  fileUrl: string
   name: string
   description: string
   satoshis: number
@@ -15,7 +16,7 @@ interface DetailsRecord {
   txid: string
   outputIndex: number
   retentionPeriod: number
-  coverHash: string
+  coverUrl: string
   createdAt: Date
 }
 
@@ -30,26 +31,32 @@ const Details: React.FC = () => {
   useEffect(() => {
     const fetchDetails = async () => {
       try {
+        const wallet = new WalletClient('auto', 'localhost')
+        const authFetch = new AuthFetch(wallet)
 
+        const lookupResolver = new LookupResolver({ networkPreset: window.location.hostname === 'localhost' ? 'local' : 'mainnet' })
 
-        const response = await fetch('http://localhost:8080/lookup', {
-          method: 'POST',
-          body: JSON.stringify({
-            service: 'ls_market',
-            query: {
-              type: 'findDetails',
-              value: {
-                txid,
-                outputIndex: parseInt(outputIndex || '0', 10)
-              }
+        // const response = await lookupResolver.query({ service: 'ls_market', query: 'findStore' })
+
+        const response = await lookupResolver.query({
+          service: 'ls_market',
+          query: {
+            type: 'findDetails',
+            value: {
+              txid,
+              outputIndex: parseInt(outputIndex || '0', 10)
             }
-          })
+          }
         })
 
+
+        if (response.type !== 'freeform') {
+          throw new Error('Lookup answer must be an freeform list')
+        }
          
-        const output = (await response.json()).data.result[0]
+        const output = (response.result as any)[0]
         const data: DetailsRecord = {
-          fileHash: output.fileHash,
+          fileUrl: output.fileUrl,
           name: output.name,
           description: output.description,
           satoshis: output.satoshis,
@@ -58,7 +65,7 @@ const Details: React.FC = () => {
           txid: output.txid,
           outputIndex: output.outputIndex,
           retentionPeriod: output.retentionPeriod,
-          coverHash: output.coverHash,
+          coverUrl: output.coverUrl,
           createdAt: output.createdAt
         }
 
@@ -78,32 +85,38 @@ const Details: React.FC = () => {
       if (!details) return
       setIsLoading(true)
 
-      const fileHash = details.fileHash
-      if (!fileHash) {
-        console.error('No fileHash available to purchase!')
+      const fileUrl = details.fileUrl
+      if (!fileUrl) {
+        console.error('No fileUrl available to purchase!')
         return
       }
 
-      console.log('File hash:', fileHash)
+      console.log('File url:', fileUrl)
 
       const wallet = new WalletClient('auto', 'localohst')
       const authFetch = new AuthFetch(wallet)
 
-      const keyUrl = `http://localhost:3000/purchase/${fileHash}`
-      const payResponse = await authFetch.fetch(
-        keyUrl,
-        {
-          method: 'POST',
-          body: JSON.stringify({ fileHash }),
-          headers: { 'Content-Type': 'application/json' }
-        }
-      )
-
-      if (!payResponse.ok) {
-        console.error('Failed to complete purchase:', await payResponse.text())
+      console.log('wip')
+      const keyUrl = `${constants.keyServer}/purchase/${fileUrl}`
+      let payResponse
+      try {
+        payResponse = await authFetch.fetch(
+          keyUrl,
+          {
+            method: 'POST',
+            body: JSON.stringify({ fileUrl }),
+            headers: { 'Content-Type': 'application/json' }
+          }
+        )
+      } catch (error) {
+        console.log(error)
       }
 
-      const purchaseResult = await payResponse.json()
+      if (!payResponse?.ok) {
+        console.error('Failed to complete purchase:', await payResponse?.text())
+      }
+
+      const purchaseResult = await payResponse?.json()
 
       const encryptionKey = purchaseResult.encryptionKey
       if (!encryptionKey) {
@@ -112,7 +125,7 @@ const Details: React.FC = () => {
       }
 
       const storageDownloader = new StorageDownloader()
-      const { data: encryptedBytes, mimeType } = await storageDownloader.download(fileHash) // TODO url?
+      const { data: encryptedBytes, mimeType } = await storageDownloader.download(fileUrl)
       console.log('Downloaded file from UHRP, mimeType:', mimeType)
 
       // Decrypting the file
@@ -122,7 +135,7 @@ const Details: React.FC = () => {
       const blob = new Blob(
         [Uint8Array.from(decryptedBytes)],
         { type: 'model/stl' })
-      const fileUrl = URL.createObjectURL(blob)
+      const url = URL.createObjectURL(blob)
       setDecryptedFileURL(fileUrl)
     } catch (error) {
       console.error('Error during purchase:', error)
@@ -145,7 +158,7 @@ const Details: React.FC = () => {
       {/* The cover image using your existing pattern (uhrp-react Img) */}
       <Box mb={2}>
         <Img
-          src={`uhrp:${details.coverHash}`}
+          src={`${details.coverUrl}`}
           style={{
             width: '100%',
             maxHeight: '300px',

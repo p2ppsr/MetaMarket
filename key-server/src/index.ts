@@ -2,13 +2,15 @@ import express, { Express, Request, Response, NextFunction } from 'express'
 import bodyParser, { json } from 'body-parser'
 import prettyjson from 'prettyjson'
 import dotenv from 'dotenv'
-import { SymmetricKey, Utils, StorageUtils, StorageDownloader, Script, P2PKH, PublicKey, PrivateKey } from '@bsv/sdk'
+import { SymmetricKey, Utils, StorageUtils, StorageDownloader, Script, P2PKH, PublicKey, PrivateKey, LookupResolver, LookupResolverConfig } from '@bsv/sdk'
 import { createAuthMiddleware } from '@bsv/auth-express-middleware'
 import { createPaymentMiddleware } from '@bsv/payment-express-middleware'
 import { getWallet } from './utils/walletSingleton.js'
 import { MongoClient } from 'mongodb'
 import { KeyStorage } from './KeyStorage.js'
 import { randomBytes } from 'crypto'
+import { Console, error } from 'console'
+(global.self as any) = { crypto }
 
 dotenv.config()
 
@@ -17,6 +19,7 @@ const SERVER_PRIVATE_KEY = process.env.SERVER_PRIVATE_KEY as string
 const SERVER_URL = process.env.SERVER_URL as string
 const MONGO_URI = process.env.MONGO_URI as string
 const DATABASE_NAME = process.env.DATABASE_NAME as string
+const BSV_NETWORK = process.env.BSV_NETWORK as 'mainnet' | 'testnet' | 'local'
 
 // Let TypeScript know there is possibly an authrite prop on incoming requests
 declare module 'express-serve-static-core' {
@@ -50,7 +53,7 @@ app.use((req, res, next: NextFunction) => {
     }
 })
 
-// TODO comment this ehe
+// Logging
 app.use((req: Request, res: Response, next: NextFunction) => {
     console.log(`[${req.method}] <- ${req.url}`);
     const logObject = { ...req.body }
@@ -67,34 +70,78 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 app.use(express.static('public'))
 
+const wallet = await getWallet()
+
+const authMiddleware = createAuthMiddleware({
+    wallet,
+    allowUnauthenticated: false
+})
+
+const paymentMiddleware = createPaymentMiddleware({
+
+    wallet,
+    calculateRequestPrice: async (req) => {
+        if (!req.url.includes('/purchase')) {
+            return 0
+        }
+        const { fileUrl } = (req.body as any) || {}
+        try {
+            if (!fileUrl) return 0
+            const record = await keyStorage.findByQuery(fileUrl)
+            if (!record || record.length != 1) {
+                return 0
+            }
+            console.log(record[0].satoshis)
+            return record[0].satoshis
+        } catch (e) {
+            return 0
+        }
+    }
+})
+
+app.use(authMiddleware)
+app.use(paymentMiddleware)
+
 app.post('/submit', async (req: Request, res: Response) => {
     try {
-        const { fileHash, encryptionKey, satoshis, publicKey } = req.body.body;
+        const { fileUrl, encryptionKey, satoshis, publicKey } = req.body;
 
-        if (!fileHash || !encryptionKey || !satoshis || !publicKey) {
+        if (!fileUrl || !encryptionKey || !satoshis || !publicKey) {
             return res.status(400).json({ message: 'Missing required fields' })
         }
 
+        console.log(`File URL: ${fileUrl}`)
         // Checking if the file is on UHRP
-        const fileHashArray = Utils.fromBase58(fileHash) // TODO TESTING NEEDED!
-        if (fileHashArray.length !== 33) {
-            return res.status(400).json({ message: `Invalid file hash length: ${fileHashArray.length} (expected 33 bytes from Base58Check)` });
+        if (!StorageUtils.isValidURL(fileUrl)) {
+            return res.status(400).json({ message: `Invalid file Url: ${fileUrl}` });
         }
-        const actualFileHash = fileHashArray.slice(1);
-        const url = StorageUtils.getURLForHash(actualFileHash);
 
-        const storageDownloader = new StorageDownloader() // TODO maybe add network
-        const resolvedUrl = await storageDownloader.resolve(url)
+        const storageDownloader = new StorageDownloader()
+
+        let resolvedUrl
+        for (let attempt = 1; attempt <= 6; attempt++) {
+            try {
+                resolvedUrl = await storageDownloader.resolve(fileUrl)
+                if (resolvedUrl) {
+                    break
+                }
+            } catch (error) {
+                console.log(`Download attempt ${attempt} failed:`, error)
+                if (attempt < 12) {
+                    await new Promise((resolve) => setTimeout(resolve, 5000))
+                } else {
+                    throw new Error(`Download failed after ${attempt} attempts`)
+                }
+            }
+        }
 
         if (!resolvedUrl || resolvedUrl.length === 0) {
-            return res.status(404).json({ message: 'File not found on UHRP', url });
+            return res.status(404).json({ message: 'File not found on UHRP', fileUrl });
         }
 
         // Checking the encryption
-        const uhrpFile = await storageDownloader.download(url)
+        const uhrpFile = await storageDownloader.download(fileUrl)
         const encryptedDataArray = uhrpFile.data
-        console.log(uhrpFile.data)
-        console.log(encryptedDataArray)
         if (!encryptedDataArray || encryptedDataArray.length === 0) {
             return res.status(400).json({ message: 'Downloaded file is empty' })
         }
@@ -103,30 +150,33 @@ app.post('/submit', async (req: Request, res: Response) => {
         console.log('Key Length:', encryptionKey.length)
 
         // Checking the decryption
-        let decryptedFile
+        console.log('Encryption Key:', encryptionKey)
         try {
             const symmetricKey = new SymmetricKey(encryptionKey, 'hex')
-            decryptedFile = symmetricKey.decrypt(encryptedDataArray)
+            const decryptedFile = symmetricKey.decrypt(encryptedDataArray)
+            console.log('File decrypted successfully, length:', decryptedFile.length)
         } catch (error) {
+            console.error('Decryption error:', error)
             return res.status(400).json({ message: 'Failed to decrypt file' })
         }
 
-        // Checking to see if file is on backend database
-        const check = await fetch('http://localhost:8080/lookup', {
-            method: 'POST',
-            body:
-                JSON.stringify({
-                    service: 'ls_market',
-                    query: {
-                        type: 'hashCheck',
-                        value: { fileHash }
-                    }
-                })
+        const lookupResolver = new LookupResolver({ networkPreset: BSV_NETWORK}) 
+        const check = await lookupResolver.query({
+            service: 'ls_market',
+            query: {
+                type: 'urlCheck',
+                value: { fileUrl }
+            }
         })
-        const data = await check.json()
-        if (data.result === false) return res.status(404).json({ message: 'File not found on backend server' })
+        if (check.type !== 'freeform') {
+            throw new Error('Lookup answer must be an freeform list')
+        }
 
-        await keyStorage.storeRecord(fileHash, encryptionKey, satoshis, publicKey)
+        if (!check.result as boolean) {
+            return res.status(404).json({ message: 'File not found on backend server' })
+        }
+
+        await keyStorage.storeRecord(fileUrl, encryptionKey, satoshis, publicKey)
 
         return res.status(200).json({ message: 'File metadata saved successfully' })
     } catch (error) {
@@ -135,14 +185,11 @@ app.post('/submit', async (req: Request, res: Response) => {
     }
 })
 
-app.post('/purchase/:fileHash', async (req: Request, res: Response) => {
+app.post('/purchase/:fileUrl', async (req: Request, res: Response) => {
     try {
-        const { fileHash } = req.body
-        if (!fileHash) return res.status(400).json({ error: 'No fileHash provided' })
-
-        console.log(fileHash)
-
-        const record = await keyStorage.findByQuery(fileHash)
+        const { fileUrl } = req.body
+        if (!fileUrl) return res.status(400).json({ error: 'No fileUrl provided' })
+        const record = await keyStorage.findByQuery(fileUrl)
 
         if (!record || record.length != 1) return res.status(404).json({ error: 'File not found on key storage' })
 
@@ -185,7 +232,11 @@ app.post('/balance', async (req: Request, res: Response) => {
         if (!publicKey) return res.status(400).json({ error: 'Missing publicKey in body' })
 
         const balance = await keyStorage.getBalance(publicKey)
-        return res.json({ balance })
+        console.log('USER BALANCE:', balance)
+        return res.status(200).json({
+            success: true,
+            balance 
+        })
     } catch (error) {
         console.error('Error retrieving balance:', error)
     }
@@ -194,7 +245,7 @@ app.post('/balance', async (req: Request, res: Response) => {
 app.post('/withdraw', async (req: Request, res: Response) => {
     try {
         const { publicKey } = req.body
-        if (!publicKey || publicKey !== req.authrite?.identityKey) return res.status(400).json({ error: 'Missing publicKey in body' })
+        if (!publicKey || publicKey !== (req as any).auth?.identityKey) return res.status(400).json({ error: 'Missing publicKey in body' })
 
         const senderIdentityKey = PrivateKey.fromHex(SERVER_PRIVATE_KEY).toPublicKey().toString()
 
@@ -239,7 +290,7 @@ app.post('/withdraw', async (req: Request, res: Response) => {
 
         return res.status(200).json({
             status: 'Withdraw partial tx created!',
-            transaction: Utils.toBase58(tx),
+            transaction: Utils.toArray(tx, 'base64'),
             derivationPrefix,
             derivationSuffix,
             amount: balance,
@@ -266,36 +317,3 @@ app.listen(PORT, async () => {
     }
 })
 
-    // Auth is enforced from here forward
-    ; (async () => {
-        debugger
-        const wallet = await getWallet()
-
-        const authMiddleware = createAuthMiddleware({
-            wallet,
-            allowUnauthenticated: false
-        })
-
-        const paymentMiddleware = createPaymentMiddleware({
-            wallet,
-            calculateRequestPrice: async (req) => {
-                if (!req.url.includes('/purchase')) {
-                    return 0
-                }
-                const { fileHash } = (req.body as any) || {}
-                try {
-                    if (!fileHash) return 0
-                    const record = await keyStorage.findByQuery(fileHash)
-                    if (!record || record.length != 1) {
-                        return 0
-                    }
-                    return record[0].satoshis
-                } catch (e) {
-                    return 0
-                }
-            }
-        })
-
-        app.use(authMiddleware)
-        app.use(paymentMiddleware)
-    })()

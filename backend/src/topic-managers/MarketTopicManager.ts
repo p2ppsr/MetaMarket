@@ -24,21 +24,14 @@ export default class MarketTopicManager implements TopicManager {
           const fields = decodedScript.fields
 
           //console.log("Topic manager fields:", fields.toString())
-
-          // Protocol ID
-          if (fields[0].toString() !== '1UHRPYnMHPuQ5Tgb3AF8JXqwKkmZVy5hG') {
-            console.log('Invalid protocol ID.')
-            continue
-          }
-
-          // File Hash
-          if (fields[1].length !== 52) {
-            console.log('Invalid file hash length.')
+          // UHRP Url
+          if (fields[0].length !== 52) {
+            console.log('Invalid UHRP url length.')
             continue
           }
 
           // Name
-          if (fields[2].length === 0) {
+          if (fields[1].length === 0) {
             console.log('Name field is empty.')
             continue
           }
@@ -47,45 +40,43 @@ export default class MarketTopicManager implements TopicManager {
           // (Optional validation can be added here if needed)
 
           // Satoshis
-          const satoshis = parseInt(fields[4].toString(), 10)
+          const satoshis = parseInt(fields[3].toString(), 10)
           if (isNaN(satoshis) || satoshis <= 0) {
             console.log('Invalid satoshis value.')
             continue
           }
 
           // Public Key
-          if (!fields[5] || fields[5].length === 0) {
+          if (!fields[4] || fields[4].length === 0) {
             console.log('Public key is missing.')
             continue
           }
           try {
-            PublicKey.fromString(fields[5].toString('utf8'))
+            PublicKey.fromString(fields[4].toString('utf8'))
           } catch {
             console.log('Invalid public key format.')
             continue
           }
 
           // File Size
-          const fileSize = parseInt(fields[6].toString(), 10)
+          const fileSize = parseInt(fields[5].toString(), 10)
           if (isNaN(fileSize) || fileSize <= 0) {
             console.log('Invalid file size.')
             continue
           }
 
           // Expiry Time
-          const expiryTime = parseInt(fields[7].toString(), 10)
+          const expiryTime = parseInt(fields[6].toString(), 10)
           if (isNaN(expiryTime) || expiryTime <= Date.now()) {
             console.log('Invalid expiry time.')
             continue
           }
 
-          // Cover Image Hash
-          if (fields[8].length !== 52) {
-            console.log('Invalid cover image hash length.')
+          // Cover Image UHRP Url
+          if (fields[7].length !== 52) {
+            console.log('Invalid cover image UHRP url/ length.')
             continue
           }
-
-          console.log('OUTPUT ADMISSED WOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOT UWU!!!!!!    ', fields[3].toString('utf8')) // TODO
 
           admissibleOutputs.push(index)
         } catch (error) {

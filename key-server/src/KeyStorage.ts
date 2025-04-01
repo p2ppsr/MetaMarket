@@ -22,19 +22,19 @@ export class KeyStorage {
 
   /**
    * Stores a record in the database
-   * @param {string} fileHash The file hash
+   * @param {string} fileUrl The file url
    * @param {string} encryptionKey The encryption key
    * @param {number} satoshis The satoshi count
    * @param {string} publicKey The public key of the uploader
    */
   async storeRecord(
-    fileHash: string,
+    fileUrl: string,
     encryptionKey: string,
     satoshis: number,
     publicKey: string
   ): Promise<void> {
     console.log('Storing record in MongoDB:', {
-      fileHash,
+      fileUrl,
       encryptionKey,
       satoshis,
       publicKey
@@ -42,7 +42,7 @@ export class KeyStorage {
 
     try {
       await this.records.insertOne({
-        fileHash,
+        fileUrl,
         encryptionKey,
         satoshis,
         publicKey
@@ -55,10 +55,10 @@ export class KeyStorage {
 
   /**
  * Delete a matching record
- * @param {string} fileHash The file hash
+ * @param {string} fileUrl The file url
  */
-  async deleteRecord(fileHash: string): Promise<void> {
-    await this.records.deleteOne({ fileHash })
+  async deleteRecord(fileUrl: string): Promise<void> {
+    await this.records.deleteOne({ fileUrl })
   }
 
   /**
@@ -75,16 +75,16 @@ export class KeyStorage {
   }
 
   /**
-   * Finds records by query using fileHash
-   * @param {string} fileHash The file hash
+   * Finds records by query using fileUrl
+   * @param {string} fileUrl The file url
    * @returns {Promise<KeyRecord[]>} Matching records
    */
   async findByQuery(
-    fileHash: string
+    fileUrl: string
   ): Promise<KeyRecord[]> {
     try {
       return await this.records
-        .find({ fileHash })
+        .find({ fileUrl })
         .toArray();
     } catch (error) {
       console.error('Failed to find records by query:', error);
@@ -123,10 +123,5 @@ export class KeyStorage {
       { $set: { balance: newBalance } },
       { upsert: true }
     )
-  }
-
-  // FOR TESTING PURPOSES TODO!!!!!!!!!! TODO TODO TODO
-  async deleteAll(): Promise<DeleteResult> {
-    return await this.records.deleteMany({})
   }
 }

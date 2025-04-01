@@ -864,18 +864,10 @@
     tsx "^3.12.7"
     yaml "^2.2.1"
 
-"@bsv/sdk@^1.1.23", "@bsv/sdk@^1.2.17", "@bsv/sdk@^1.4.4", "@bsv/sdk@^1.4.9":
-  version "1.4.9"
-  resolved "https://registry.npmjs.org/@bsv/sdk/-/sdk-1.4.9.tgz"
-  integrity sha512-HoEhJF1gErXhyQ+CbdMS1uFQ138QfbM08ys1745GTJqeMbj4vWRNMWBIDr9RcTmXZofHvf6WUhLuCcq2sciuKw==
-
-"@bsv/uhrp-react@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.npmjs.org/@bsv/uhrp-react/-/uhrp-react-1.0.0.tgz"
-  integrity sha512-Zg87p7Ad7R7bdvOv3Cf8zCICANBbF4Wue9NkFabYUpG+WBe9DtzEiDvZ66ENf7IFqZu4kl83OKfidzOkcLUjJQ==
-  dependencies:
-    "@bsv/sdk" "^1.4.9"
-    zustand "^4.5.6"
+"@bsv/sdk@^1.1.23", "@bsv/sdk@^1.2.17", "@bsv/sdk@^1.4.15", "@bsv/sdk@^1.4.4", "@bsv/sdk@^1.4.9":
+  version "1.4.15"
+  resolved "https://registry.npmjs.org/@bsv/sdk/-/sdk-1.4.15.tgz"
+  integrity sha512-dtcyIBzayIkXFZ0hc1dbWcrUtymbhupeRoxy0o4zwbmzlyj8r2uX9VjYTanTq/WhCUzSMD2BYAnvY4LEN8IfIg==
 
 "@bsv/wallet-toolbox-client@^1.1.31":
   version "1.2.21"
@@ -1653,7 +1645,7 @@
   resolved "https://registry.npmjs.org/@types/react-transition-group/-/react-transition-group-4.4.12.tgz"
   integrity sha512-8TV6R3h2j7a91c+1DXdJi3Syo69zzIZbz7Lg5tORM5LEJG7X/E6a1V3drRyBRZq7/utz7A+c4OgYLiLcYGHG6w==
 
-"@types/react@*", "@types/react@^17.0.0 || ^18.0.0 || ^19.0.0", "@types/react@^18.0.0", "@types/react@^18.3.3", "@types/react@>=16.8":
+"@types/react@*", "@types/react@^17.0.0 || ^18.0.0 || ^19.0.0", "@types/react@^18.0.0", "@types/react@^18.3.3":
   version "18.3.18"
   resolved "https://registry.npmjs.org/@types/react/-/react-18.3.18.tgz"
   integrity sha512-t4yC+vtgnkYjNSKlFx1jkAhH8LgTo2N/7Qvi83kdEaUtMDiwpbLAktKDaAMlRcJ5eSxZkH74eEGt1ky31d7kfQ==
@@ -6091,7 +6083,7 @@ react-transition-group@^4.4.5:
     loose-envify "^1.4.0"
     prop-types "^15.6.2"
 
-"react@^16.8.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^17.0.0 || ^18.0.0 || ^19.0.0", react@^18.3.1, react@>=16.6.0, react@>=16.8, react@>=16.8.0, react@>=18:
+"react@^16.8.0 || ^17.0.0 || ^18.0.0", "react@^17.0.0 || ^18.0.0 || ^19.0.0", react@^18.3.1, react@>=16.6.0, react@>=16.8.0, react@>=18:
   version "18.3.1"
   resolved "https://registry.npmjs.org/react/-/react-18.3.1.tgz"
   integrity sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==
@@ -7270,11 +7262,6 @@ use-async-effect@^2.2.7:
   resolved "https://registry.npmjs.org/use-async-effect/-/use-async-effect-2.2.7.tgz"
   integrity sha512-Vq94tKPyo/9Nok4LOapV0GoGgZPhbeDW/bP6bulLPV4+lIoftaBRBBbGjTbM+j5W1Bm2EkUHJgapeu5YnQvKEA==
 
-use-sync-external-store@^1.2.2:
-  version "1.4.0"
-  resolved "https://registry.npmjs.org/use-sync-external-store/-/use-sync-external-store-1.4.0.tgz"
-  integrity sha512-9WXSPC5fMv61vaupRkCKCxsPxBocVnwakBEkMIHHpkTTg6icbJtg6jzgtLDm4bl3cSHAca52rYWih0k4K3PfHw==
-
 util-deprecate@^1.0.1, util-deprecate@^1.0.2, util-deprecate@~1.0.1:
   version "1.0.2"
   resolved "https://registry.npmjs.org/util-deprecate/-/util-deprecate-1.0.2.tgz"
@@ -7606,10 +7593,3 @@ yoctocolors-cjs@^2.1.2:
   version "2.1.2"
   resolved "https://registry.npmjs.org/yoctocolors-cjs/-/yoctocolors-cjs-2.1.2.tgz"
   integrity sha512-cYVsTjKl8b+FrnidjibDWskAv7UKOfcwaVZdp/it9n1s9fU3IkgDbhdIRKCW4JDsAlECJY0ytoVPT3sK6kideA==
-
-zustand@^4.5.6:
-  version "4.5.6"
-  resolved "https://registry.npmjs.org/zustand/-/zustand-4.5.6.tgz"
-  integrity sha512-ibr/n1hBzLLj5Y+yUcU7dYw8p6WnIVzdJbnX+1YpaScvZVF2ziugqHs+LAmHw4lWO9c/zRj+K1ncgWDQuthEdQ==
-  dependencies:
-    use-sync-external-store "^1.2.2"

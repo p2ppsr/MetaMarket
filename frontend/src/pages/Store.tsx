@@ -2,12 +2,13 @@ import { Container, Box, Grid, Paper, Typography, TextField, Button, Grid2 } fro
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Img } from '@bsv/uhrp-react'
+import { LookupResolver } from '@bsv/sdk'
 import ReactMarkdown from 'react-markdown'
 
 interface StoreRecord {
   name: string
   satoshis: number
-  coverHash: string
+  coverUrl: string
   txid: string
   outputIndex: number
 }
@@ -16,23 +17,23 @@ const Store: React.FC = () => {
   const [files, setFiles] = useState<StoreRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const lookupResolver = new LookupResolver({ networkPreset: window.location.hostname === 'localhost' ? 'local' : 'mainnet' }) 
 
   useEffect(() => {
     const fetchFiles = async () => {
       try {
-        const response = await fetch('http://localhost:8080/lookup', {
-          method: 'POST',
-          body: JSON.stringify({
-            service: 'ls_market',
-            query: 'findStore'
-          })
-        })
+        const response = await lookupResolver.query({ service: 'ls_market', query: 'findStore' })
 
-        const outputs = (await response.json()).data.result || []
+        if (response.type !== 'freeform') {
+          throw new Error('Lookup answer must be an freeform list')
+        }
+        
+        const outputs = (response.result as any[]) || []
+        console.log(outputs)
         const fileData: StoreRecord[] = outputs.map((output: any) => ({
           name: output.name,
           satoshis: output.satoshis,
-          coverHash: output.coverHash,
+          coverUrl: output.coverUrl,
           txid: output.txid,
           outputIndex: output.outputIndex
         }))
@@ -54,42 +55,39 @@ const Store: React.FC = () => {
     try {
       if (!searchTerm.trim()) {
         // Re-fetch the default store
-        const response = await fetch('http://localhost:8080/lookup', {
-          method: 'POST',
-          body: JSON.stringify({
-            service: 'ls_market',
-            query: 'findStore'
-          })
-        })
+        const response = await lookupResolver.query({service: 'ls_market', query: 'findStore'})
+        if (response.type !== 'freeform') {
+          throw new Error('Lookup answer must be freeform')
+        }
 
-        const outputs = (await response.json()).data.result || []
+        const outputs = await response.result as any || []
         const fileData: StoreRecord[] = outputs.map((output: any) => ({
           name: output.name,
           satoshis: output.satoshis,
-          coverHash: output.coverHash,
+          coverUrl: output.coverUrl,
           txid: output.txid,
           outputIndex: output.outputIndex
         }))
         setFiles(fileData)
       } else {
-        const response = await fetch('http://localhost:8080/lookup', {
-          method: 'POST',
-          body: JSON.stringify({
-            service: 'ls_market',
-            query: {
-              type: 'findByName',
-              value: { name: searchTerm }
-            }
-          })
-        })
-        const outputs = (await response.json()).data.result || []
-        const fileData = outputs.map((output: any) => ({
+        const response = await lookupResolver.query({service: 'ls_market', query: {
+          type: 'findByName',
+          value: {name: searchTerm}
+        }})
+        if (response.type !== 'freeform') {
+          throw new Error('Lookup answer must be an output list')
+        }
+        
+
+        const outputs = response.result as any || []
+        const fileData: StoreRecord[] = outputs.map((output: any) => ({
           name: output.name,
           satoshis: output.satoshis,
-          coverHash: output.coverHash,
+          coverUrl: output.coverUrl,
           txid: output.txid,
           outputIndex: output.outputIndex
         }))
+
         setFiles(fileData)
       }
     } catch (error) {
@@ -143,7 +141,7 @@ const Store: React.FC = () => {
               }}
             >
               <Img
-                src={`uhrp:${file.coverHash}`}
+                src={`${file.coverUrl}`}
                 style={{
                   width: '100%',
                   height: '150px',

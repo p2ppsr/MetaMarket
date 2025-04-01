@@ -15,13 +15,13 @@ export class MarketStorage {
 
   /**
    * Stores Market record
-   * @param {string} txid transaction id             TODO: CHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANGE!
+   * @param {string} txid transaction id
    * @param {number} outputIndex index of the UTXO
    * @param {string} value - Market value to save
    */
-  async storeRecord(fileHash: string, name: string, description: string, satoshis: number, creatorPublicKey: string, size: number, txid: string, outputIndex: number, retentionPeriod: number, coverHash: string): Promise<void> {
+  async storeRecord(fileUrl: string, name: string, description: string, satoshis: number, creatorPublicKey: string, size: number, txid: string, outputIndex: number, retentionPeriod: number, coverUrl: string): Promise<void> {
     console.log("Storing record in MongoDB:", {
-      fileHash,
+      fileUrl,
       name,
       description,
       satoshis,
@@ -30,15 +30,12 @@ export class MarketStorage {
       txid,
       outputIndex,
       retentionPeriod,
-      coverHash
+      coverUrl
   })
-
-  debugger
-
     try {
       // Insert new record
       await this.records.insertOne({
-        fileHash,
+        fileUrl,
         name,
         description,
         satoshis,
@@ -47,7 +44,7 @@ export class MarketStorage {
         txid,
         outputIndex,
         retentionPeriod,
-        coverHash,
+        coverUrl,
         createdAt: new Date()
       })
     } catch (error) {
@@ -86,7 +83,7 @@ export class MarketStorage {
       .project<StoreReference>({
         name: 1,
         satoshis: 1,
-        coverHash: 1,
+        coverUrl: 1,
         txid: 1,
         outputIndex: 1
       })
@@ -94,7 +91,7 @@ export class MarketStorage {
       .then(results => results.map(record => ({
         name: record.name.toString(),
         satoshis: Number(record.satoshis.toString()),
-        coverHash: record.coverHash.toString(),
+        coverUrl: record.coverUrl,
         txid: record.txid,
         outputIndex: record.outputIndex
       })))
@@ -103,7 +100,7 @@ export class MarketStorage {
   async findDetails(txid: string, outputIndex: number): Promise<DetailsReference[]> {
     return await this.records.find({ txid, outputIndex })
       .project<DetailsReference>({
-        fileHash: 1,
+        fileUrl: 1,
         name: 1,
         description: 1,
         satoshis: 1,
@@ -112,12 +109,12 @@ export class MarketStorage {
         txid: 1,
         outputIndex: 1,
         retentionPeriod: 1,
-        coverHash: 1,
+        coverUrl: 1,
         createdAt: 1
       })
       .toArray()
       .then(results => results.map(record => ({
-        fileHash: record.fileHash.toString(),
+        fileUrl: record.fileUrl.toString(),
         name: record.name.toString(),
         description: record.description.toString(),
         satoshis: Number(record.satoshis.toString()),
@@ -126,7 +123,7 @@ export class MarketStorage {
         txid: record.txid.toString(),
         outputIndex: Number(record.outputIndex.toString()),
         retentionPeriod: Number(record.retentionPeriod.toString()),
-        coverHash: record.coverHash.toString(),
+        coverUrl: record.coverUrl.toString(),
         createdAt: record.createdAt
       })))
   }
@@ -134,22 +131,22 @@ export class MarketStorage {
   async findByUploaderPublicKey(publicKey: string): Promise<AccountReference[]> {
     return await this.records.find({ creatorPublicKey: publicKey })
       .project<AccountReference>({
-        fileHash: 1,
+        fileUrl: 1,
         name: 1,
         satoshis: 1,
         txid: 1,
         outputIndex: 1,
-        coverHash: 1,
+        coverUrl: 1,
         createdAt: 1
       })
       .toArray()
       .then(results=> results.map(record => ({
-        fileHash: record.fileHash.toString(),
+        fileUrl: record.fileUrl.toString(),
         name: record.name.toString(),
         satoshis: Number(record.satoshis.toString()),
         txid: record.txid.toString(),
         outputIndex: Number(record.outputIndex),
-        coverHash: record.coverHash.toString(),
+        coverUrl: record.coverUrl.toString(),
         createdAt: record.createdAt
       })))
   }
@@ -159,7 +156,7 @@ export class MarketStorage {
       .project<StoreReference>({
         name: 1,
         satoshis: 1,
-        coverHash: 1,
+        coverUrl: 1,
         txid: 1,
         outputIndex: 1
       })
@@ -167,18 +164,18 @@ export class MarketStorage {
       .then( results=> results.map(record => ({    
         name: record.name.toString(),
         satoshis: Number(record.satoshis.toString()),
-        coverHash: record.coverHash.toString(),
+        coverUrl: record.coverUrl.toString(),
         txid: record.txid,
         outputIndex: record.outputIndex
    })))
   }
 
   /**
-   * Checks if a record with the specified fileHash exists in the database
-   * @param {string} fileHash - The file hash to search for
+   * Checks if a record with the specified fileUrl exists in the database
+   * @param {string} fileUrl - The file Url to search for
    * @returns {Promise<boolean>} - Returns true if the record exists, otherwise false
    */
-  async isFileHashInDatabase(fileHash: string): Promise<boolean> {
-    const record = await this.records.findOne({ fileHash });
+  async isFileUrlInDatabase(fileUrl: string): Promise<boolean> {
+    const record = await this.records.findOne({ fileUrl });
     return record !== null;
 }}

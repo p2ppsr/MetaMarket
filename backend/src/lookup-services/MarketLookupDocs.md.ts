@@ -1,8 +1,5 @@
-export default `# Meter Lookup Service
+export default `# MetaMarket Lookup Service
 
-To use this service, send a query that comprises a string "findAll".
+To use this service, send a query!
 
-All UTXOs will be returned.`
-
-
-// TODO CHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANGE
+Values from the database will be returned.`

@@ -5,8 +5,7 @@
   "description": "Standard BSV project structure",
   "dependencies": {
     "@bsv/lars": "^1.0.14",
-    "@bsv/sdk": "^1.4.9",
-    "@bsv/uhrp-react": "^1.0.0",
+    "@bsv/sdk": "^1.4.15",
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
     "@mui/icons-material": "^5.16.4",

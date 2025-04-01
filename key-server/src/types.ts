@@ -1,5 +1,5 @@
 export interface KeyRecord {
-    fileHash: string
+    fileUrl: string
     encryptionKey: string
     satoshis: number
     publicKey: string

@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { Container, Typography, Box, Button, Grid, Paper } from '@mui/material'
 import { Img } from '@bsv/uhrp-react'
-import { AtomicBEEF, AuthFetch, Utils, WalletClient } from '@bsv/sdk'
-
+import { AtomicBEEF, AuthFetch, LookupResolver, Utils, WalletClient } from '@bsv/sdk'
+import constants from '../constants'
 
 interface UploadedFile {
-    fileHash: string
+    fileUrl: string
     name: string
     satoshis: number
-    coverHash: string
+    coverUrl: string
     txid: string
     outputIndex: number
     timesBought?: number
@@ -33,44 +33,43 @@ const Account: React.FC = () => {
 
     const wallet = new WalletClient('auto', 'localhost')
     const authFetch = new AuthFetch(wallet)
+    const lookupResolver = new LookupResolver({ networkPreset: window.location.hostname === 'localhost' ? 'local' : 'mainnet' }) 
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true)
             try {
-                const publicKey = (await wallet.getPublicKey({ identityKey: true })).publicKey
-
-                const signedResponse = await authFetch.fetch('/balance', {
+                let publicKey = (await wallet.getPublicKey({ identityKey: true }))
+                const response = await authFetch.fetch(`${constants.keyServer}/balance`, {
                     method: 'POST',
-                    body: publicKey,
+                    body: JSON.stringify(publicKey),
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 })
-                
-                if (!signedResponse) {
+          
+                if (!response) {
                     throw new Error('Error fetching account balance')
                 }
-                const { balance }  = signedResponse as unknown as BalanceResponse
+                const { balance }  = await response.json()
 
                 setBalance(balance || 0)
 
-                const body = JSON.stringify({
-                    service: 'ls_market',
+                const filesResponse = await lookupResolver.query({ 
+                    service: 'ls_market', 
                     query: {
                         type: 'findUploaderFiles',
                         value: {
-                            publicKey
+                            publicKey: publicKey.publicKey.toString()
                         }
                     }
                 })
 
-                const filesResponse = await fetch('http://localhost:8080/lookup', {
-                    method: 'POST',
-                    body
-                })
+                if (filesResponse.type !== 'freeform') {
+                    throw new Error('Lookup answer must be an freeform list')
+                }
 
-                const results: UploadedFile[] = (await filesResponse.json()).data.result || []           
+                const results: UploadedFile[] = filesResponse.result as any || []           
                 setFiles(results)
             } catch (err) {
                 console.error('Error fetching account data:', err)
@@ -85,10 +84,9 @@ const Account: React.FC = () => {
         setLoading(true)
         try {
             const publicKey = await wallet.getPublicKey({ identityKey: true })
-
-            const response = await authFetch.fetch('/withdraw', {
+            const response = await authFetch.fetch(`${constants.keyServer}/withdraw`, {
                 method: 'POST',
-                body: publicKey,
+                body: JSON.stringify(publicKey),
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -98,8 +96,8 @@ const Account: React.FC = () => {
                 return
             }
 
-            const paymentData = response.json() as unknown as WithdrawResponse
-            
+            const paymentData = await response.json() as unknown as WithdrawResponse
+
             const processedTx = await wallet.internalizeAction({ 
                 tx: Utils.toArray(paymentData.transaction, 'base64') as AtomicBEEF,
                 outputs: [{
@@ -111,7 +109,7 @@ const Account: React.FC = () => {
                     outputIndex: 0,
                     protocol: 'wallet payment'
                 }],
-                description: '' //TODO
+                description: `Withdraw from MetaMarket to ${(await wallet.getPublicKey({ identityKey: true })).publicKey}`
             })
         
             console.log('Withdraw successful!', processedTx)
@@ -127,20 +125,15 @@ const Account: React.FC = () => {
     const handleDeleteFile = async (txid: string, outputIndex: number) => {
         setLoading(true)
         try {
-            const response = await fetch('http://localhost:8080/lookup', {
-                method: 'POST',
-                body: JSON.stringify({
-                    service: 'ls_market',
-                    query: {
-                        type: 'deleteFile',
-                        value: { txid, outputIndex }
-                    }
-                })
+            const response = lookupResolver.query({
+                service: 'ls_market',
+                query: {
+                    type: 'deleteFile',
+                    value: { txid, outputIndex }
+                }
             })
-            const data = await response.json()
-            console.log("Queried:", data) // TODO
-            
-            // Delete
+            console.log('Removed file:', txid)
+
             setFiles(prev => prev.filter(f => !(f.txid === txid && f.outputIndex === outputIndex)))
         } catch (err) {
             console.error('Delete file error:', err)
@@ -177,7 +170,7 @@ const Account: React.FC = () => {
                             style={{ padding: '1em', minHeight: '300px' }}
                         >
                             <Img
-                                src={`uhrp:${file.coverHash}`}
+                                src={`${file.coverUrl}`}
                                 style={{ width: '100%', height: '150px', objectFit: 'contain' }}
                             />
                             <Typography variant="subtitle1">

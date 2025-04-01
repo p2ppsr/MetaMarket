@@ -1,4 +1,5 @@
-import { SymmetricKey, TaggedBEEF, StorageUploader, WalletClient, Utils, PushDrop, TopicBroadcaster, Transaction, AuthFetch } from '@bsv/sdk'
+import { SymmetricKey, TaggedBEEF, StorageUploader, WalletClient, Utils, PushDrop, TopicBroadcaster, Transaction, AuthFetch, StorageUtils, StorageDownloader } from '@bsv/sdk'
+import constants from '../constants'
 
 export async function publishCommitment({
     file,
@@ -46,6 +47,7 @@ export async function publishCommitment({
             retentionPeriod
         })
         console.log(`STL File Url: ${stl.uhrpURL}`)
+        console.log(StorageUtils.isValidURL(stl.uhrpURL))
 
         const coverArray = Array.from(new Uint8Array(await coverImage.arrayBuffer()))
         const uploadableCover = {
@@ -57,8 +59,6 @@ export async function publishCommitment({
             file: uploadableCover,
             retentionPeriod
         })
-
-        console.log(`Cover Image URL ${cover.uhrpURL}`)
 
         const expiryTime = Date.now() + (expiration * 60 * 60 * 24 * 1000)
 
@@ -81,8 +81,7 @@ export async function publishCommitment({
             true
         )
 
-        console.log(`Script values:\nUHRPYnMHPuQ5Tgb3AF8JXqwKkmZVy5hG\n${stl.uhrpURL}\n${name}\n${description}\n${satoshis}\n${publicKey}\n${file.size}\n${expiryTime}\n${cover.uhrpURL}`) // TODO REMOOOOOOOVE!!
-
+        console.log(`${stl.uhrpURL}\n${name}\n${description}\n${satoshis}\n${publicKey}\n${file.size}\n${expiryTime}\n${cover.uhrpURL}`)
         const { tx } = await wallet.createAction({
             outputs: [{
                 lockingScript: lockingScript.toHex(),
@@ -98,19 +97,20 @@ export async function publishCommitment({
         const broadcaster = new TopicBroadcaster(['tm_market'], {
             networkPreset: window.location.hostname === 'localhost' ? 'local' : 'mainnet'
         })
-        const backendResponse = broadcaster.broadcast(Transaction.fromAtomicBEEF(tx))
+        const backendResponse = await broadcaster.broadcast(Transaction.fromAtomicBEEF(tx))
         console.log('Backed server response:', backendResponse)
 
         // Uploading encryption key to key server
         const authFetch = new AuthFetch(wallet)
         const body = {
-            fileHash: stl.uhrpURL,
+            fileUrl: stl.uhrpURL,
             encryptionKey: symmetricKey.toHex(),
             satoshis,
             publicKey
         }
 
-        const keyServerResponse = await authFetch.fetch('/submit', {
+
+        const keyServerResponse = await authFetch.fetch(`${constants.keyServer}/submit`, {
             method: 'POST',
             body,
             headers: {
@@ -118,9 +118,10 @@ export async function publishCommitment({
             }
         })
 
+
         console.log('Key server response:', await keyServerResponse.json())
 
-        return ''        // TODO add something here or turn it void       
+        return ''
 
     } catch (error) {
         console.error('Error publishing commitment:', error)
