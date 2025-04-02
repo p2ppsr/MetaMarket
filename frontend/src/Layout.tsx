@@ -6,13 +6,14 @@ const Layout: React.FC = () => {
     return (
         <>
             <AppBar position="fixed">
-                <Toolbar>
-                    <Typography variant="h6" component="div" sx={{ flexGrow: 1}}>
-                        MetaMarket
-                    </Typography>
-                    <Button color="inherit" component={Link} to="/">Home</Button>
+            <Toolbar>
+                    <Button color="inherit" component={Link} to="">
+                        <Typography variant="h6" component="div">
+                            MetaMarket
+                        </Typography>
+                    </Button>
+                    <div style={{ flexGrow: 1 }} /> {/* This pushes the other buttons to the right */}
                     <Button color="inherit" component={Link} to="/upload-file">Upload File</Button>
-                    <Button color="inherit" component={Link} to="/store">Store</Button>
                     <Button color="inherit" component={Link} to="/account">Account</Button>
                 </Toolbar>
             </AppBar>

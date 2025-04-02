@@ -136,7 +136,7 @@ const Details: React.FC = () => {
         [Uint8Array.from(decryptedBytes)],
         { type: 'model/stl' })
       const url = URL.createObjectURL(blob)
-      setDecryptedFileURL(fileUrl)
+      setDecryptedFileURL(url)
     } catch (error) {
       console.error('Error during purchase:', error)
     } finally {
