@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Img } from '@bsv/uhrp-react'
 import { LookupResolver } from '@bsv/sdk'
 import ReactMarkdown from 'react-markdown'
+import { AmountDisplay } from 'amountinator-react'
 
 interface StoreRecord {
   name: string
@@ -155,6 +156,12 @@ const Store: React.FC = () => {
               </Typography>
               <Typography variant="body2" color="primary" gutterBottom>
                 Cost: {file.satoshis} Satoshis
+              </Typography>
+              <Typography variant="h6" align="center">
+                <AmountDisplay 
+                  paymentAmount={file.satoshis}
+                  formatOptions={{ useCommas: true, decimalPlaces: 10}}
+                />
               </Typography>
               <Box mt={1}>
                 <Link
