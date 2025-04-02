@@ -8,15 +8,14 @@ import { createPaymentMiddleware } from '@bsv/payment-express-middleware'
 import { getWallet } from './utils/walletSingleton.js'
 import { MongoClient } from 'mongodb'
 import { KeyStorage } from './KeyStorage.js'
-import { randomBytes } from 'crypto'
-import { Console, error } from 'console'
+import crypto, { randomBytes } from 'crypto'
+
 (global.self as any) = { crypto }
 
 dotenv.config()
 
 const PORT = process.env.PORT || 3000
 const SERVER_PRIVATE_KEY = process.env.SERVER_PRIVATE_KEY as string
-const SERVER_URL = process.env.SERVER_URL as string
 const MONGO_URI = process.env.MONGO_URI as string
 const DATABASE_NAME = process.env.DATABASE_NAME as string
 const BSV_NETWORK = process.env.BSV_NETWORK as 'mainnet' | 'testnet' | 'local'
