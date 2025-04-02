@@ -3,7 +3,7 @@ interface Constants {
 }
 
 // Local and Production URLs
-const production = 'https://temp.com'
+const production = 'https://metamarket-keyserver.babbage.systems'
 const local = 'http://localhost:3000'
 
 let constants: Constants
