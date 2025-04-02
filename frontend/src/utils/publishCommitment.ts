@@ -1,4 +1,4 @@
-import { SymmetricKey, TaggedBEEF, StorageUploader, WalletClient, Utils, PushDrop, TopicBroadcaster, Transaction, AuthFetch, StorageUtils, StorageDownloader } from '@bsv/sdk'
+import { SymmetricKey, TaggedBEEF, StorageUploader, WalletClient, Utils, PushDrop, TopicBroadcaster, Transaction, AuthFetch, StorageUtils, StorageDownloader, LookupResolver } from '@bsv/sdk'
 import constants from '../constants'
 
 export async function publishCommitment({
@@ -8,7 +8,8 @@ export async function publishCommitment({
     satoshis,
     publicKey,
     expiration,
-    coverImage
+    coverImage,
+    setStatusText
 }: {
     file: File,
     name: string,
@@ -16,7 +17,8 @@ export async function publishCommitment({
     satoshis: number,
     publicKey: string,
     expiration: number,
-    coverImage: File
+    coverImage: File,
+    setStatusText: (text: string) => void
 }): Promise<string> {
     try {
         const storageURL = 'https://nanostore.babbage.systems'
@@ -33,7 +35,8 @@ export async function publishCommitment({
         }
 
         if (!uploadableFile) {
-            throw new Error('Error uploading STL file')
+            setStatusText('Error uploading STL file.')
+            throw new Error('Could not prepare STL file.')
         }
 
         // Storing the file on the Market host
@@ -41,7 +44,8 @@ export async function publishCommitment({
 
         const wallet = new WalletClient('auto', 'localhost')
         const storageUploader = new StorageUploader({ storageURL, wallet })
-
+        
+        setStatusText('Uploading files to UHRP...')
         const stl = await storageUploader.publishFile({
             file: uploadableFile,
             retentionPeriod
@@ -82,7 +86,7 @@ export async function publishCommitment({
         )
 
         console.log(`${stl.uhrpURL}\n${name}\n${description}\n${satoshis}\n${publicKey}\n${file.size}\n${expiryTime}\n${cover.uhrpURL}`)
-        const { tx } = await wallet.createAction({
+        const { txid, tx } = await wallet.createAction({
             outputs: [{
                 lockingScript: lockingScript.toHex(),
                 satoshis: 1,
@@ -91,15 +95,18 @@ export async function publishCommitment({
             description: 'publish to metamarket UHRP'
         })
         if (!tx) {
+            setStatusText('Error creating transcation data')
             throw new Error('Error creating action')
         }
 
+        setStatusText('Broadcasting transcation')
         const broadcaster = new TopicBroadcaster(['tm_market'], {
             networkPreset: window.location.hostname === 'localhost' ? 'local' : 'mainnet'
         })
         const backendResponse = await broadcaster.broadcast(Transaction.fromAtomicBEEF(tx))
         console.log('Backed server response:', backendResponse)
 
+        setStatusText('Registering with MetaMarket...')
         // Uploading encryption key to key server
         const authFetch = new AuthFetch(wallet)
         const body = {
@@ -109,22 +116,44 @@ export async function publishCommitment({
             publicKey
         }
 
+        try {
+            const response = await authFetch.fetch(`${constants.keyServer}/submit`, {
+                method: 'POST',
+                body,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
 
-        const keyServerResponse = await authFetch.fetch(`${constants.keyServer}/submit`, {
-            method: 'POST',
-            body,
-            headers: {
-                'Content-Type': 'application/json'
+            if (!response.ok) {
+                throw new Error(response.statusText)
             }
-        })
+        } catch (error) {
+            setStatusText('Error uploading to MetaMarket')
+            await new Promise((resolve) => setTimeout(resolve, 5000))
+            const txidString = txid || ''
+            
+            const lookupResolver = new LookupResolver({ networkPreset: window.location.hostname === 'localhost' ? 'local' : 'mainnet' }) 
+            const lookupResponse = await lookupResolver.query({
+                service: 'ls_market',
+                query: {
+                    type: 'deleteFile',
+                    value: { txid: txidString, outputIndex: 0 }
 
+                }
+            })
+            if (lookupResponse.type != 'freeform') {
+                throw new Error('Lookup answer must be an freeform list')
+            }
+            console.log(`Removed ${lookupResponse.result} file from backend server:`, txid)
+            throw new Error('Key server registration failed.')
+        }
 
-        console.log('Key server response:', await keyServerResponse.json())
-
-        return ''
+        return 'Upload successful!!!'
 
     } catch (error) {
+        setStatusText('')
         console.error('Error publishing commitment:', error)
-        throw error
+        throw `Error publishing commitment: ${error}`
     }
 }

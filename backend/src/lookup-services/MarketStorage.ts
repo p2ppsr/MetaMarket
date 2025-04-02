@@ -58,8 +58,9 @@ export class MarketStorage {
    * @param {string} txid transaction id
    * @param {number} outputIndex Output index of the UTXO
    */
-  async deleteRecord(txid: string, outputIndex: number): Promise<void> {
-    await this.records.deleteMany({ txid, outputIndex })
+  async deleteRecord(txid: string, outputIndex: number): Promise<number> {
+    return (await this.records.deleteMany({ txid, outputIndex })).deletedCount
+    
   }
 
   // TODO maybe change the UTXOReference type to have more info to use(?)
