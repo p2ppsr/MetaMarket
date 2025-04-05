@@ -5,7 +5,8 @@
   "description": "Standard BSV project structure",
   "dependencies": {
     "@bsv/cars-cli": "^1.1.4",
-    "@bsv/lars": "^1.4.1"
+    "@bsv/lars": "^1.4.1",
+    "amountinator-react": "^0.1.33"
   },
   "scripts": {
     "lars": "lars",
