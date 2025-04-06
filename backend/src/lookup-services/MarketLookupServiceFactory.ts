@@ -151,10 +151,10 @@ class MarketLookupService implements LookupService {
 
       if (isDeleteFile(query)) {
         const { txid, outputIndex } = query.value
-        await this.storage.deleteRecord(txid, outputIndex)
+        const result = await this.storage.deleteRecord(txid, outputIndex)
         return {
           type: 'freeform',
-          result: true
+          result
         }
       }
 

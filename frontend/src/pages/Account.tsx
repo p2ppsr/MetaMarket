@@ -125,14 +125,17 @@ const Account: React.FC = () => {
     const handleDeleteFile = async (txid: string, outputIndex: number) => {
         setLoading(true)
         try {
-            const response = lookupResolver.query({
+            const response = await lookupResolver.query({
                 service: 'ls_market',
                 query: {
                     type: 'deleteFile',
                     value: { txid, outputIndex }
                 }
             })
-            console.log('Removed file:', txid)
+            if (response.type != 'freeform') {
+                throw new Error('Lookup answer must be an freeform list')
+            }
+            console.log(`Removed ${response.result} file:`, txid)
 
             setFiles(prev => prev.filter(f => !(f.txid === txid && f.outputIndex === outputIndex)))
         } catch (err) {
