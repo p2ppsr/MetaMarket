@@ -1,11 +1,10 @@
 import { LookupService, LookupQuestion, LookupAnswer, LookupFormula } from '@bsv/overlay'
+import { PushDrop } from '@bsv/sdk'
 import { MarketStorage } from './MarketStorage.js'
-import { Script, Utils } from '@bsv/sdk'
+import { Script } from '@bsv/sdk'
 import docs from './MarketLookupDocs.md.js'
 import { Db } from 'mongodb'
-import pushdrop from 'pushdrop'
 import { StoreReference, DetailsReference } from '../types.js'
-
 
 /**
  * Implements a Market lookup service
@@ -32,19 +31,19 @@ class MarketLookupService implements LookupService {
    */
   async outputAdded?(txid: string, outputIndex: number, outputScript: Script, topic: string): Promise<void> {
     if (topic !== 'tm_market') return
-    console.log(pushdrop.decode({ script: outputScript.toHex(), fieldFormat: 'buffer' }).fields)
+    console.log(PushDrop.decode(outputScript).fields.toString())
     try {
-      const decodedScript = pushdrop.decode({ script: outputScript.toHex(), fieldFormat: 'buffer' })
+      const decodedScript = PushDrop.decode(outputScript)
       const fields = decodedScript.fields
 
-      const uhrpUrl = fields[0]?.toString('utf8')
-      const name = fields[1]?.toString('utf8')
-      const description = fields[2]?.toString('utf8')
-      const satoshis = Number(fields[3]?.toString('utf8'))
-      const creatorPublicKey = fields[4]?.toString('utf8')
-      const size = Number(fields[5]?.toString('utf8'))
-      const retentionPeriod = Number(fields[6]?.toString('utf8'))
-      const coverUrl = fields[7]?.toString('utf8')
+      const uhrpUrl = fields[0]?.toString()
+      const name = fields[1]?.toString()
+      const description = fields[2]?.toString()
+      const satoshis = Number(fields[3]?.toString())
+      const creatorPublicKey = fields[4]?.toString()
+      const size = Number(fields[5]?.toString())
+      const retentionPeriod = Number(fields[6]?.toString())
+      const coverUrl = fields[7]?.toString()
 
       // Store the token fields for future lookup
       await this.storage.storeRecord(
