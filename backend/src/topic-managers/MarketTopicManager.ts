@@ -1,7 +1,6 @@
 import { AdmittanceInstructions, TopicManager } from '@bsv/overlay'
-import { Transaction, ProtoWallet, Utils, PublicKey } from '@bsv/sdk'
+import { Transaction, PublicKey, PushDrop, WalletClient} from '@bsv/sdk'
 import docs from './MarketTopicDocs.md.js'
-import pushdrop from 'pushdrop'
 
 export default class MarketTopicManager implements TopicManager {
   /**
@@ -20,7 +19,7 @@ export default class MarketTopicManager implements TopicManager {
       // Try to decode and validate transaction outputs
       for (const [index, output] of outputs.entries()) {
         try {
-          const decodedScript = await pushdrop.decode({script: output.lockingScript.toHex(), fieldFormat: "buffer"})
+          const decodedScript = await PushDrop.decode(output.lockingScript)
           const fields = decodedScript.fields
 
           //console.log("Topic manager fields:", fields.toString())
@@ -52,7 +51,7 @@ export default class MarketTopicManager implements TopicManager {
             continue
           }
           try {
-            PublicKey.fromString(fields[4].toString('utf8'))
+            PublicKey.fromString(fields[4].toString())
           } catch {
             console.log('Invalid public key format.')
             continue
