@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Img } from '@bsv/uhrp-react'
 import { LookupResolver } from '@bsv/sdk'
 import ReactMarkdown from 'react-markdown'
+import { AmountDisplay } from 'amountinator-react'
 
 interface StoreRecord {
   name: string
@@ -17,7 +18,7 @@ const Store: React.FC = () => {
   const [files, setFiles] = useState<StoreRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const lookupResolver = new LookupResolver({ networkPreset: window.location.hostname === 'localhost' ? 'local' : 'mainnet' }) 
+  const lookupResolver = new LookupResolver({ networkPreset: window.location.hostname === 'localhost' ? 'local' : 'mainnet' })
 
   useEffect(() => {
     const fetchFiles = async () => {
@@ -27,7 +28,7 @@ const Store: React.FC = () => {
         if (response.type !== 'freeform') {
           throw new Error('Lookup answer must be an freeform list')
         }
-        
+
         const outputs = (response.result as any[]) || []
         console.log(outputs)
         const fileData: StoreRecord[] = outputs.map((output: any) => ({
@@ -55,7 +56,7 @@ const Store: React.FC = () => {
     try {
       if (!searchTerm.trim()) {
         // Re-fetch the default store
-        const response = await lookupResolver.query({service: 'ls_market', query: 'findStore'})
+        const response = await lookupResolver.query({ service: 'ls_market', query: 'findStore' })
         if (response.type !== 'freeform') {
           throw new Error('Lookup answer must be freeform')
         }
@@ -70,14 +71,16 @@ const Store: React.FC = () => {
         }))
         setFiles(fileData)
       } else {
-        const response = await lookupResolver.query({service: 'ls_market', query: {
-          type: 'findByName',
-          value: {name: searchTerm}
-        }})
+        const response = await lookupResolver.query({
+          service: 'ls_market', query: {
+            type: 'findByName',
+            value: { name: searchTerm }
+          }
+        })
         if (response.type !== 'freeform') {
           throw new Error('Lookup answer must be an output list')
         }
-        
+
 
         const outputs = response.result as any || []
         const fileData: StoreRecord[] = outputs.map((output: any) => ({
@@ -155,6 +158,12 @@ const Store: React.FC = () => {
               </Typography>
               <Typography variant="body2" color="primary" gutterBottom>
                 Cost: {file.satoshis} Satoshis
+              </Typography>
+              <Typography variant="h6" align="center">
+                {/* <AmountDisplay 
+                  paymentAmount={file.satoshis}
+                  formatOptions={{ useCommas: true, decimalPlaces: 10}}
+                /> */}
               </Typography>
               <Box mt={1}>
                 <Link
