@@ -1,5 +1,5 @@
 import { KeyDeriver, PrivateKey, WalletInterface } from '@bsv/sdk'
-import { Services, StorageClient, Wallet, WalletSigner, WalletStorageManager } from '@bsv/wallet-toolbox';
+import { Services, StorageClient, Wallet, WalletSigner, WalletStorageManager } from '@bsv/wallet-toolbox-client';
 
 const walletInstance: WalletInterface | null = null
 

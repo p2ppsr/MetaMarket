@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { Img } from '@bsv/uhrp-react'
 import { LookupResolver } from '@bsv/sdk'
 import ReactMarkdown from 'react-markdown'
-import { AmountDisplay } from 'amountinator-react'
+// import { AmountDisplay } from 'amountinator-react'
 
 interface StoreRecord {
   name: string

@@ -1,7 +1,5 @@
-import { SymmetricKey, TaggedBEEF, StorageUploader, WalletClient, Utils, PushDrop, TopicBroadcaster, Transaction, AuthFetch, StorageUtils, StorageDownloader } from '@bsv/sdk'
+import { SymmetricKey, StorageUploader, WalletClient, Utils, PushDrop, TopicBroadcaster, Transaction, AuthFetch, StorageUtils } from '@bsv/sdk'
 import constants from '../constants'
-
-const BSV_NETWORK = process.env.BSV_NETWORK as 'mainnet' | 'testnet'
 
 export async function publishCommitment({
   file,
