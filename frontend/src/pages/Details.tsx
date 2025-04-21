@@ -53,7 +53,7 @@ const Details: React.FC = () => {
         if (response.type !== 'freeform') {
           throw new Error('Lookup answer must be an freeform list')
         }
-         
+
         const output = (response.result as any)[0]
         const data: DetailsRecord = {
           fileUrl: output.fileUrl,
@@ -82,6 +82,7 @@ const Details: React.FC = () => {
 
   const handlePurchase = async () => {
     try {
+      debugger
       if (!details) return
       setIsLoading(true)
 
@@ -96,7 +97,6 @@ const Details: React.FC = () => {
       const wallet = new WalletClient('auto', 'localohst')
       const authFetch = new AuthFetch(wallet)
 
-      console.log('wip')
       const keyUrl = `${constants.keyServer}/purchase/${fileUrl}`
       let payResponse
       try {
@@ -105,7 +105,9 @@ const Details: React.FC = () => {
           {
             method: 'POST',
             body: JSON.stringify({ fileUrl }),
-            headers: { 'Content-Type': 'application/json' }
+            headers: {
+              'Content-Type': 'application/json'
+            }
           }
         )
       } catch (error) {

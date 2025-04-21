@@ -77,7 +77,6 @@ const authMiddleware = createAuthMiddleware({
 })
 
 const paymentMiddleware = createPaymentMiddleware({
-
     wallet,
     calculateRequestPrice: async (req) => {
         if (!req.url.includes('/purchase')) {
@@ -186,6 +185,7 @@ app.post('/submit', async (req: Request, res: Response) => {
 
 app.post('/purchase/:fileUrl', async (req: Request, res: Response) => {
     try {
+        debugger
         const { fileUrl } = req.body
         if (!fileUrl) return res.status(400).json({ error: 'No fileUrl provided' })
         const record = await keyStorage.findByQuery(fileUrl)

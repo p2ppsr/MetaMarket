@@ -1,5 +1,5 @@
 import { AdmittanceInstructions, TopicManager } from '@bsv/overlay'
-import { Transaction, PublicKey, PushDrop, WalletClient} from '@bsv/sdk'
+import { Transaction, PublicKey, PushDrop, Utils } from '@bsv/sdk'
 import docs from './MarketTopicDocs.md.js'
 
 export default class MarketTopicManager implements TopicManager {
@@ -21,8 +21,7 @@ export default class MarketTopicManager implements TopicManager {
         try {
           const decodedScript = await PushDrop.decode(output.lockingScript)
           const fields = decodedScript.fields
-
-          //console.log("Topic manager fields:", fields.toString())
+          
           // UHRP Url
           if (fields[0].length !== 52) {
             console.log('Invalid UHRP url length.')
@@ -31,7 +30,7 @@ export default class MarketTopicManager implements TopicManager {
 
           // Name
           if (fields[1].length === 0) {
-            console.log('Name field is empty.')
+            console.log('Name field is empty:', fields[1].toString())
             continue
           }
 
@@ -51,7 +50,8 @@ export default class MarketTopicManager implements TopicManager {
             continue
           }
           try {
-            PublicKey.fromString(fields[4].toString())
+            console.log('Public Key:', Utils.toUTF8(Utils.toArray(fields[4])))
+            PublicKey.fromString(Utils.toUTF8(Utils.toArray(fields[4])))
           } catch {
             console.log('Invalid public key format.')
             continue
@@ -65,9 +65,9 @@ export default class MarketTopicManager implements TopicManager {
           }
 
           // Expiry Time
-          const expiryTime = parseInt(fields[6].toString(), 10)
+          const expiryTime = parseInt(Utils.toUTF8(Utils.toArray(fields[6])), 10)
           if (isNaN(expiryTime) || expiryTime <= Date.now()) {
-            console.log('Invalid expiry time.')
+            console.log('Invalid expiry time:', expiryTime)
             continue
           }
 

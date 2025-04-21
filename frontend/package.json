@@ -2,23 +2,26 @@
   "name": "frontend",
   "version": "1.0.0",
   "description": "",
-  "license": "ISC",
-  "author": "",
-  "type": "commonjs",
+  "license": "MIT",
+  "author": "Jackie Lu",
+  "type": "module",
   "scripts": {
+    "dev": "vite",
     "start": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@bsv/sdk": "^1.4.15",
+    "@bsv/sdk": "^1.4.19",
     "@bsv/uhrp-react": "^1.0.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/material": "^6.4.3",
     "@vitejs/plugin-react": "^4.3.4",
     "dotenv": "^16.4.7",
-    "react": "^19.0.0",
-    "react-is": "^19.0.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-is": "18.3.1",
     "react-markdown": "^9.0.3",
     "react-router": "^7.1.5",
     "react-router-dom": "^7.1.5",
@@ -27,9 +30,9 @@
     "vite": "^6.2.5"
   },
   "devDependencies": {
-    "@types/react": "^19.0.8",
-    "@types/react-dom": "^19.0.3",
     "buffer": "^6.0.3",
-    "node-stdlib-browser": "^1.3.1"
+    "node-stdlib-browser": "^1.3.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   }
 }

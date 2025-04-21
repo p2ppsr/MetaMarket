@@ -1,5 +1,5 @@
 import { LookupService, LookupQuestion, LookupAnswer, LookupFormula } from '@bsv/overlay'
-import { PushDrop } from '@bsv/sdk'
+import { PushDrop, Utils } from '@bsv/sdk'
 import { MarketStorage } from './MarketStorage.js'
 import { Script } from '@bsv/sdk'
 import docs from './MarketLookupDocs.md.js'
@@ -36,14 +36,14 @@ class MarketLookupService implements LookupService {
       const decodedScript = PushDrop.decode(outputScript)
       const fields = decodedScript.fields
 
-      const uhrpUrl = fields[0]?.toString()
-      const name = fields[1]?.toString()
-      const description = fields[2]?.toString()
-      const satoshis = Number(fields[3]?.toString())
-      const creatorPublicKey = fields[4]?.toString()
-      const size = Number(fields[5]?.toString())
-      const retentionPeriod = Number(fields[6]?.toString())
-      const coverUrl = fields[7]?.toString()
+      const uhrpUrl = Utils.toUTF8(Utils.toArray(fields[0]))
+      const name = Utils.toUTF8(Utils.toArray(fields[1]))
+      const description = Utils.toUTF8(Utils.toArray(fields[2]))
+      const satoshis = Number(Utils.toUTF8(Utils.toArray(fields[3])))
+      const creatorPublicKey = Utils.toUTF8(Utils.toArray(fields[4]))
+      const size = Number(Utils.toUTF8(Utils.toArray(fields[5])))
+      const retentionPeriod = Number(Utils.toUTF8(Utils.toArray(fields[6])))
+      const coverUrl = Utils.toUTF8(Utils.toArray(fields[7]))
 
       // Store the token fields for future lookup
       await this.storage.storeRecord(
