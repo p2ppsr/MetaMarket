@@ -73,7 +73,7 @@ export default class MarketTopicManager implements TopicManager {
 
           // Cover Image UHRP Url
           if (fields[7].length !== 52) {
-            console.log('Invalid cover image UHRP url/ length.')
+            console.log('Invalid cover image UHRP url length.')
             continue
           }
 

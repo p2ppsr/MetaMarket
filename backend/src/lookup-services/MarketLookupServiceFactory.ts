@@ -1,7 +1,6 @@
-import { LookupService, LookupQuestion, LookupAnswer, LookupFormula } from '@bsv/overlay'
+import { LookupService, LookupQuestion, LookupAnswer, LookupFormula, AdmissionMode, SpendNotificationMode, OutputAdmittedByTopic, OutputSpent } from '@bsv/overlay'
 import { PushDrop, Utils } from '@bsv/sdk'
 import { MarketStorage } from './MarketStorage.js'
-import { Script } from '@bsv/sdk'
 import docs from './MarketLookupDocs.md.js'
 import { Db } from 'mongodb'
 import { StoreReference, DetailsReference } from '../types.js'
@@ -12,6 +11,8 @@ import { StoreReference, DetailsReference } from '../types.js'
  * @public
  */
 class MarketLookupService implements LookupService {
+  readonly admissionMode: AdmissionMode = 'locking-script'
+  readonly spendNotificationMode: SpendNotificationMode = 'none'
   /**
    * Constructs a new MarketLookupService instance
    * @param storage - The storage instance to use for managing records
@@ -19,21 +20,17 @@ class MarketLookupService implements LookupService {
   constructor(public storage: MarketStorage) { }
 
   /**
-   * Notifies the lookup service of a new output added.
-   *
-   * @param {string} txid - The transaction ID containing the output.
-   * @param {number} outputIndex - The index of the output in the transaction.
-   * @param {Script} outputScript - The script of the output to be processed.
-   * @param {string} topic - The topic associated with the output.
-   *
-   * @returns {Promise<void>} A promise that resolves when the processing is complete.
-   * @throws Will throw an error if there is an issue with storing the record in the storage engine.
+   * 
+   * @param payload - The output admitted by the topic manager
+   * @returns 
    */
-  async outputAdded?(txid: string, outputIndex: number, outputScript: Script, topic: string): Promise<void> {
-    if (topic !== 'tm_market') return
-    console.log(PushDrop.decode(outputScript).fields.toString())
+  async outputAdmittedByTopic(payload: OutputAdmittedByTopic): Promise<void> {
+    console.log('YIPPEE')
+    if (payload.mode !== 'locking-script') throw new Error('Invalid mode')
+    const { topic, lockingScript, txid, outputIndex } = payload
+    if (topic !== 'tm_market') throw new Error(`Invalid topic "${topic}" for this service.`)
     try {
-      const decodedScript = PushDrop.decode(outputScript)
+      const decodedScript = PushDrop.decode(lockingScript)
       const fields = decodedScript.fields
 
       const uhrpUrl = Utils.toUTF8(Utils.toArray(fields[0]))
@@ -65,24 +62,22 @@ class MarketLookupService implements LookupService {
   }
 
   /**
-   * Notifies the lookup service that an output was spent
-   * @param txid - The transaction ID of the spent output
-   * @param outputIndex - The index of the spent output
-   * @param topic - The topic associated with the spent output
+   * 
+   * @param payload - The output admitted by the topic manager
    */
-  async outputSpent?(txid: string, outputIndex: number, topic: string): Promise<void> {
-    if (topic !== 'tm_market') return
+  async outputSpent(payload: OutputSpent): Promise<void> {
+    if (payload.mode !== 'none') throw new Error('Invalid mode')
+    const { topic, txid, outputIndex } = payload
+    if (topic !== 'tm_market') throw new Error(`Invalid topic "${topic}" for this service.`)
     await this.storage.deleteRecord(txid, outputIndex)
   }
 
   /**
-   * Notifies the lookup service that an output has been deleted
-   * @param txid - The transaction ID of the deleted output
-   * @param outputIndex - The index of the deleted output
-   * @param topic - The topic associated with the deleted output
+   * 
+   * @param txid - The transaction ID of the output to evict
+   * @param outputIndex - The index of the output to evict
    */
-  async outputDeleted?(txid: string, outputIndex: number, topic: string): Promise<void> {
-    if (topic !== 'tm_market') return
+  async outputEvicted(txid: string, outputIndex: number): Promise<void> {
     await this.storage.deleteRecord(txid, outputIndex)
   }
 
@@ -94,7 +89,7 @@ class MarketLookupService implements LookupService {
   async lookup(question: LookupQuestion): Promise<LookupAnswer | LookupFormula> {
     try {
       const query = question.query
-            
+
       // Validate query presence
       if (!query) {
         throw new Error('A valid query must be provided!');
@@ -165,8 +160,8 @@ class MarketLookupService implements LookupService {
           type: 'freeform',
           result: results
         }
-      } 
-           
+      }
+
       throw new Error('Unknown query type');
     } catch (error) {
       console.error('Failed to process lookup query:', error);

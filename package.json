@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "description": "Standard BSV project structure",
   "dependencies": {
-    "@bsv/cars-cli": "^1.1.4",
-    "@bsv/lars": "^1.4.1"
+    "@bsv/cars-cli": "^1.2.3",
+    "@bsv/lars": "^1.5.0"
   },
   "scripts": {
     "lars": "lars",

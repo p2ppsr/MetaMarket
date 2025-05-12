@@ -31,7 +31,7 @@ export class MarketStorage {
       outputIndex,
       retentionPeriod,
       coverUrl
-  })
+    })
     try {
       // Insert new record
       await this.records.insertOne({
@@ -60,7 +60,7 @@ export class MarketStorage {
    */
   async deleteRecord(txid: string, outputIndex: number): Promise<number> {
     return (await this.records.deleteMany({ txid, outputIndex })).deletedCount
-    
+
   }
 
   // TODO maybe change the UTXOReference type to have more info to use(?)
@@ -79,7 +79,7 @@ export class MarketStorage {
       })))
   }
 
-  async findStore(): Promise<StoreReference[]> {    
+  async findStore(): Promise<StoreReference[]> {
     return await this.records.find({})
       .project<StoreReference>({
         name: 1,
@@ -141,7 +141,7 @@ export class MarketStorage {
         createdAt: 1
       })
       .toArray()
-      .then(results=> results.map(record => ({
+      .then(results => results.map(record => ({
         fileUrl: record.fileUrl.toString(),
         name: record.name.toString(),
         satoshis: Number(record.satoshis.toString()),
@@ -162,13 +162,13 @@ export class MarketStorage {
         outputIndex: 1
       })
       .toArray()
-      .then( results=> results.map(record => ({    
+      .then(results => results.map(record => ({
         name: record.name.toString(),
         satoshis: Number(record.satoshis.toString()),
         coverUrl: record.coverUrl.toString(),
         txid: record.txid,
         outputIndex: record.outputIndex
-   })))
+      })))
   }
 
   /**
@@ -179,4 +179,5 @@ export class MarketStorage {
   async isFileUrlInDatabase(fileUrl: string): Promise<boolean> {
     const record = await this.records.findOne({ fileUrl });
     return record !== null;
-}}
+  }
+}
