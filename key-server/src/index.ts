@@ -82,19 +82,19 @@ const paymentMiddleware = createPaymentMiddleware({
     wallet,
     calculateRequestPrice: async (req) => {
         if (!req.url.includes('/purchase')) {
-            return 0
+            return 42
         }
         const { fileUrl } = (req.body as any) || {}
         try {
-            if (!fileUrl) return 0
+            if (!fileUrl) return 42
             const record = await keyStorage.findByQuery(fileUrl)
             if (!record || record.length != 1) {
-                return 0
+                return 42
             }
             console.log(record[0].satoshis)
             return record[0].satoshis
         } catch (e) {
-            return 0
+            return 42
         }
     }
 })
@@ -146,11 +146,6 @@ app.post('/submit', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Downloaded file is empty' })
     }
 
-    console.log('Encryption Key:', encryptionKey)
-    console.log('Key Length:', encryptionKey.length)
-
-    // Checking the decryption
-    console.log('Encryption Key:', encryptionKey)
     try {
       const symmetricKey = new SymmetricKey(encryptionKey, 'hex')
       const decryptedFile = symmetricKey.decrypt(encryptedDataArray)
@@ -187,7 +182,6 @@ app.post('/submit', async (req: Request, res: Response) => {
 
 app.post('/purchase/:fileUrl', async (req: Request, res: Response) => {
     try {
-        debugger
         const { fileUrl } = req.body
         if (!fileUrl) return res.status(400).json({ error: 'No fileUrl provided' })
         const record = await keyStorage.findByQuery(fileUrl)
@@ -198,8 +192,6 @@ app.post('/purchase/:fileUrl', async (req: Request, res: Response) => {
     await keyStorage.incrementBalance(publicKey, satoshis)
 
     const encryptionKey = record[0].encryptionKey
-
-    console.log('Encryption key:', encryptionKey)
 
     return res.status(200).json({
       success: true,

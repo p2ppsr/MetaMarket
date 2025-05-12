@@ -82,7 +82,6 @@ const Details: React.FC = () => {
 
   const handlePurchase = async () => {
     try {
-      debugger
       if (!details) return
       setIsLoading(true)
 

@@ -100,6 +100,8 @@ export async function publishCommitment({
     const backendResponse = await broadcaster.broadcast(Transaction.fromAtomicBEEF(tx))
     console.log('Backed server response:', backendResponse)
 
+    debugger
+
     // Uploading encryption key to key server
     const authFetch = new AuthFetch(wallet)
     const body = {
