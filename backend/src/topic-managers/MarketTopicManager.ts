@@ -19,7 +19,7 @@ export default class MarketTopicManager implements TopicManager {
       // Try to decode and validate transaction outputs
       for (const [index, output] of outputs.entries()) {
         try {
-          const decodedScript = await PushDrop.decode(output.lockingScript)
+          const decodedScript = PushDrop.decode(output.lockingScript)
           const fields = decodedScript.fields
           
           // UHRP Url

@@ -1,10 +1,11 @@
-import { Container, Box, Grid, Paper, Typography, TextField, Button, Grid2 } from '@mui/material'
+import { Container, Grid, Paper, Typography, TextField, Button, CardActionArea, Card, CardContent, Box, MenuItem } from '@mui/material'
+import SearchIcon from '@mui/icons-material/Search'
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Img } from '@bsv/uhrp-react'
 import { LookupResolver } from '@bsv/sdk'
-import ReactMarkdown from 'react-markdown'
-// import { AmountDisplay } from 'amountinator-react'
+import { AmountDisplay } from 'amountinator-react'
+import { decodeOutputs, DecodedOutput } from '../utils/decodeOutputs'
 
 interface StoreRecord {
   name: string
@@ -12,169 +13,155 @@ interface StoreRecord {
   coverUrl: string
   txid: string
   outputIndex: number
+  retentionPeriod: number
 }
+
+const fields: (keyof DecodedOutput)[] = [
+  'name',
+  'satoshis',
+  'coverUrl',
+  'txid',
+  'outputIndex',
+  'retentionPeriod'
+]
+
+const filterOptions = [
+  { value: 'name' as const, label: 'Name' }
+]
+type FilterKey = typeof filterOptions[number]['value']
 
 const Store: React.FC = () => {
   const [files, setFiles] = useState<StoreRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [filter, setFilter] = useState<FilterKey>('name')
   const lookupResolver = new LookupResolver({ networkPreset: window.location.hostname === 'localhost' ? 'local' : 'mainnet' })
 
-  useEffect(() => {
-    const fetchFiles = async () => {
-      try {
-        const response = await lookupResolver.query({ service: 'ls_market', query: 'findStore' })
-
-        if (response.type !== 'freeform') {
-          throw new Error('Lookup answer must be an freeform list')
-        }
-
-        const outputs = (response.result as any[]) || []
-        console.log(outputs)
-        const fileData: StoreRecord[] = outputs.map((output: any) => ({
-          name: output.name,
-          satoshis: output.satoshis,
-          coverUrl: output.coverUrl,
-          txid: output.txid,
-          outputIndex: output.outputIndex
-        }))
-
-        setFiles(fileData)
-
-      } catch (error) {
-        console.error('Error fetching files:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchFiles()
-  }, [])
-
-  const handleSearch = async () => {
+  const fetchFiles = async (query?: string) => {
     setLoading(true)
     try {
-      if (!searchTerm.trim()) {
-        // Re-fetch the default store
-        const response = await lookupResolver.query({ service: 'ls_market', query: 'findStore' })
-        if (response.type !== 'freeform') {
-          throw new Error('Lookup answer must be freeform')
-        }
-
-        const outputs = await response.result as any || []
-        const fileData: StoreRecord[] = outputs.map((output: any) => ({
-          name: output.name,
-          satoshis: output.satoshis,
-          coverUrl: output.coverUrl,
-          txid: output.txid,
-          outputIndex: output.outputIndex
-        }))
-        setFiles(fileData)
-      } else {
-        const response = await lookupResolver.query({
-          service: 'ls_market', query: {
+      let response = null
+      if (query && filter === 'name') {
+        response = await lookupResolver.query({
+          service: 'ls_market',
+          query: {
             type: 'findByName',
             value: { name: searchTerm }
           }
         })
-        if (response.type !== 'freeform') {
-          throw new Error('Lookup answer must be an output list')
-        }
-
-
-        const outputs = response.result as any || []
-        const fileData: StoreRecord[] = outputs.map((output: any) => ({
-          name: output.name,
-          satoshis: output.satoshis,
-          coverUrl: output.coverUrl,
-          txid: output.txid,
-          outputIndex: output.outputIndex
-        }))
-
-        setFiles(fileData)
+      } else {
+        response = await lookupResolver.query({
+          service: 'ls_market',
+          query: 'findStore'
+        })
       }
+      if (response.type !== 'output-list') throw new Error('Lookup answer must be an output-list')
+
+      const fileData = await decodeOutputs(response.outputs, fields)
+      setFiles(fileData as StoreRecord[])
     } catch (error) {
-      console.error('Error searching by name:', error)
+      console.error('Error fetching files:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  if (loading) {
-    return <Typography>Loading...</Typography>
+  useEffect(() => {
+    fetchFiles()
+  }, [filter])
+
+  const handleSearch = async () => {
+    fetchFiles(searchTerm.trim())
   }
 
   return (
-    <Container maxWidth="lg">
-      <Typography variant="h5" gutterBottom>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      {/* Header */}
+      <Typography component={'span'} variant="h4">
         Browse Files
       </Typography>
-
-      {/* Search Bar Row */}
-      <Box mb={2} display="flex" alignItems="center">
+      {/* Search Bar */}
+      <Paper
+        variant="outlined"
+        sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 2, mb: 3 }}
+      >
+        <SearchIcon color="action" />
         <TextField
-          label="Search by name"
+          select
+          label="Filter by"
+          size="small"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value as FilterKey)}
+          sx={{ minWidth: 120 }}
+        >
+          {filterOptions.map((opt) => (
+            <MenuItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          placeholder="Search files…"
           variant="outlined"
+          size="small"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ marginRight: '1em' }}
+          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          fullWidth
         />
-        <Button variant="contained" color="primary" onClick={handleSearch}>
+        <Button variant="contained" onClick={handleSearch}>
           Search
         </Button>
-      </Box>
+      </Paper>
 
-      <Box mb={2}>
-        <Typography variant="body1">
-          Explore the available files. Click on any file to view more details.
-        </Typography>
-      </Box>
-
-      <Grid container spacing={3} justifyContent="center">
+      {/* 5-column Listing Grid */}
+      <Grid container spacing={3} columns={{ xs: 1, sm: 2, md: 5 }}>
         {files.map((file) => (
-          <Grid item xs={12} sm={6} md={4} key={`${file.txid}.${file.outputIndex}`}>
-            <Paper
-              elevation={3}
-              style={{
-                padding: '1em',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                minHeight: '300px'
-              }}
-            >
-              <Img
-                src={`${file.coverUrl}`}
-                style={{
-                  width: '100%',
-                  height: '150px',
-                  objectFit: 'contain',
-                  aspectRatio: '16/9',
-                  marginBottom: '1em'
-                }}
-              />
-              <Typography variant="h6" align="center">
-                {file.name}
-              </Typography>
-              <Typography variant="body2" color="primary" gutterBottom>
-                Cost: {file.satoshis} Satoshis
-              </Typography>
-              <Typography variant="h6" align="center">
-                {/* <AmountDisplay 
-                  paymentAmount={file.satoshis}
-                  formatOptions={{ useCommas: true, decimalPlaces: 10}}
-                /> */}
-              </Typography>
-              <Box mt={1}>
-                <Link
-                  to={`/${file.txid}/${file.outputIndex}`}
-                  style={{ textDecoration: 'none', color: '#1976d2' }}
-                  onClick={() => console.log(`Navigating to: /${file.txid}-${file.outputIndex}`)}
-                >
-                  View Details
-                </Link>
-              </Box>
-            </Paper>
+          <Grid size={{ xs: 1, sm: 1, md: 1 }} key={`${file.txid}.${file.outputIndex}`}>
+            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 1, '&:hover': { boxShadow: 6 } }}>
+              <CardActionArea component={Link} to={`/${file.txid}/${file.outputIndex}`} sx={{ flexGrow: 1 }}>
+                <Img
+                  src={file.coverUrl}
+                  alt={file.name}
+                  style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', borderRadius: '4px' }}
+                />
+                <CardContent>
+                  <Typography component="span"
+                    variant="h6"
+                    noWrap
+                    gutterBottom
+                    sx={{ fontWeight: 'bold' }}
+                  >
+                    {file.name}
+                  </Typography>
+                  <Typography
+                    component={"div"}
+                    variant="body1"
+                    sx={{ display: 'flex', alignItems: 'center', mt: 1 }}
+                  >
+                    Price:&nbsp;
+                    <Box
+                      component="span"
+                      sx={{ fontWeight: 'medium', display: 'inline-block' }}
+                    >
+                      <AmountDisplay
+                        paymentAmount={file.satoshis}
+                        formatOptions={{ decimalPlaces: 2 }}
+                      />
+                    </Box>
+                  </Typography>
+                  <Typography
+                    component={'span'}
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 0.5 }}
+                  >
+                    Expires:{' '}
+                    {new Date(file.retentionPeriod).toLocaleDateString()}
+                  </Typography>
+                </CardContent>
+              </CardActionArea>
+            </Card>
           </Grid>
         ))}
       </Grid>
