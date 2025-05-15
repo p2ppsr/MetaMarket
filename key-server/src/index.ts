@@ -2,13 +2,14 @@ import express, { Express, Request, Response, NextFunction } from 'express'
 import bodyParser, { json } from 'body-parser'
 import prettyjson from 'prettyjson'
 import dotenv from 'dotenv'
-import { SymmetricKey, Utils, StorageUtils, StorageDownloader, Script, P2PKH, PublicKey, PrivateKey, LookupResolver, LookupResolverConfig } from '@bsv/sdk'
+import { SymmetricKey, Utils, StorageUtils, StorageDownloader, P2PKH, PublicKey, PrivateKey, LookupResolver } from '@bsv/sdk'
 import { createAuthMiddleware } from '@bsv/auth-express-middleware'
 import { createPaymentMiddleware } from '@bsv/payment-express-middleware'
 import { getWallet } from './utils/walletSingleton.js'
 import { MongoClient } from 'mongodb'
 import { KeyStorage } from './KeyStorage.js'
 import crypto, { randomBytes } from 'crypto'
+import { decodeOutputs, DecodedOutput } from './utils/decodeOutputs.js'
 
 (global.self as any) = { crypto }
 
@@ -79,24 +80,24 @@ const authMiddleware = createAuthMiddleware({
 })
 
 const paymentMiddleware = createPaymentMiddleware({
-    wallet,
-    calculateRequestPrice: async (req) => {
-        if (!req.url.includes('/purchase')) {
-            return 42
-        }
-        const { fileUrl } = (req.body as any) || {}
-        try {
-            if (!fileUrl) return 42
-            const record = await keyStorage.findByQuery(fileUrl)
-            if (!record || record.length != 1) {
-                return 42
-            }
-            console.log(record[0].satoshis)
-            return record[0].satoshis
-        } catch (e) {
-            return 42
-        }
+  wallet,
+  calculateRequestPrice: async (req) => {
+    if (!req.url.includes('/purchase')) {
+      return 0
     }
+    const { fileUrl } = (req.body as any) || {}
+    try {
+      if (!fileUrl) return 0
+      const record = await keyStorage.findByQuery(fileUrl)
+      if (!record || record.length != 1) {
+        return 0
+      }
+      console.log(record[0].satoshis)
+      return record[0].satoshis
+    } catch (e) {
+      return 0
+    }
+  }
 })
 
 app.use(authMiddleware)
@@ -155,7 +156,7 @@ app.post('/submit', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Failed to decrypt file' })
     }
 
-    const lookupResolver = new LookupResolver({ networkPreset: location.hostname === 'localhost' ? 'local' : BSV_NETWORK })
+    const lookupResolver = new LookupResolver({ networkPreset: BSV_NETWORK })
     const check = await lookupResolver.query({
       service: 'ls_market',
       query: {
@@ -163,11 +164,15 @@ app.post('/submit', async (req: Request, res: Response) => {
         value: { fileUrl }
       }
     })
-    if (check.type !== 'freeform') {
-      throw new Error('Lookup answer must be an freeform list')
-    }
+    if (check.type !== 'output-list') throw new Error('Lookup answer must be an output-list')
 
-    if (!check.result as boolean) {
+    const fields: (keyof DecodedOutput)[] = [
+      'txid',
+      'outputIndex'
+    ]
+    const result = await decodeOutputs(check.outputs, fields)
+
+    if (result.length <= 0) {
       return res.status(404).json({ message: 'File not found on backend server' })
     }
 
@@ -181,10 +186,10 @@ app.post('/submit', async (req: Request, res: Response) => {
 })
 
 app.post('/purchase/:fileUrl', async (req: Request, res: Response) => {
-    try {
-        const { fileUrl } = req.body
-        if (!fileUrl) return res.status(400).json({ error: 'No fileUrl provided' })
-        const record = await keyStorage.findByQuery(fileUrl)
+  try {
+    const { fileUrl } = req.body
+    if (!fileUrl) return res.status(400).json({ error: 'No fileUrl provided' })
+    const record = await keyStorage.findByQuery(fileUrl)
 
     if (!record || record.length != 1) return res.status(404).json({ error: 'File not found on key storage' })
 
@@ -247,7 +252,7 @@ app.post('/withdraw', async (req: Request, res: Response) => {
     const balance = await keyStorage.getBalance(publicKey)
     if (balance <= 0) {
       return res.status(200).json({
-        status: 'No funds to withdraw.'
+        message: 'No funds to withdraw.'
       })
     }
 
@@ -282,7 +287,7 @@ app.post('/withdraw', async (req: Request, res: Response) => {
     await keyStorage.setBalance(publicKey, 0)
 
     return res.status(200).json({
-      status: 'Withdraw partial tx created!',
+      message: 'Withdraw partial tx created',
       transaction: Utils.toArray(tx, 'base64'),
       derivationPrefix,
       derivationSuffix,

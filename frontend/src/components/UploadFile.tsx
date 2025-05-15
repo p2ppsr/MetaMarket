@@ -143,12 +143,13 @@ const UploadFile = () => {
       <Typography variant="h5" gutterBottom>
         Upload an STL File
       </Typography>
+
       <form onSubmit={handleCreateSubmit}>
-        <Grid container spacing={3}>
-          {/** LEFT COLLUMN */}
-          <Grid item xs={12} md={6} order={{ xs: 2, md: 1 }}>
+        <Grid container spacing={3} columns={{ xs: 1, md: 12 }}>
+          {/* Left Column */}
+          <Grid size={{ xs: 1, md: 6 }} order={{ xs: 2, md: 1 }}>
             <Paper elevation={3} sx={{ p: 3, border: "1px solid #ccc" }}>
-              <Typography variant="h5" gutterBottom>
+              <Typography variant="h6" gutterBottom>
                 File Info
               </Typography>
 
@@ -156,10 +157,10 @@ const UploadFile = () => {
                 <TextField
                   fullWidth
                   label="Name"
-                  value={fields.name.value}
-                  onChange={(e) => handleChange("name", e.target.value)}
                   variant="standard"
                   required
+                  value={fields.name.value}
+                  onChange={(e) => handleChange("name", e.target.value)}
                 />
               </Box>
 
@@ -167,11 +168,11 @@ const UploadFile = () => {
                 <TextField
                   fullWidth
                   label="Description"
-                  value={fields.description.value}
-                  onChange={(e) => handleChange("description", e.target.value)}
+                  variant="standard"
                   multiline
                   minRows={3}
-                  variant="standard"
+                  value={fields.description.value}
+                  onChange={(e) => handleChange("description", e.target.value)}
                 />
               </Box>
 
@@ -179,58 +180,67 @@ const UploadFile = () => {
                 <TextField
                   fullWidth
                   label="Satoshis"
-                  value={fields.satoshis.value}
-                  onChange={(e) => handleChange("satoshis", e.target.value)}
-                  inputProps={{ inputMode: "numeric" }}
                   variant="standard"
                   required
+                  inputProps={{ inputMode: "numeric" }}
                   error={!!fields.satoshis.error}
                   helperText={fields.satoshis.error}
+                  value={fields.satoshis.value}
+                  onChange={(e) => handleChange("satoshis", e.target.value)}
                 />
               </Box>
 
               <Box mb={2}>
                 <Button
                   variant="outlined"
-                  onClick={() => setShowAdvancedConfig((prev) => !prev)}
+                  onClick={() => setShowAdvancedConfig((p) => !p)}
                 >
-                  {showAdvancedConfig ? "Hide Advanced Config" : "Show Advanced Config"}
+                  {showAdvancedConfig
+                    ? "Hide Advanced Config"
+                    : "Show Advanced Config"}
                 </Button>
+
                 <Collapse in={showAdvancedConfig}>
-                  <Paper elevation={2} sx={{ mt: 2, p: 2, border: "1px solid #ccc" }}>
-                    <Typography variant="h6" gutterBottom>
+                  <Paper
+                    elevation={2}
+                    sx={{ mt: 2, p: 2, border: "1px solid #ccc" }}
+                  >
+                    <Typography variant="subtitle1" gutterBottom>
                       Advanced Config
                     </Typography>
                     <TextField
                       label="Expiration Time (Days)"
-                      value={fields.expiration.value}
-                      onChange={(e) => handleChange("expiration", e.target.value)}
-                      inputProps={{ inputMode: "numeric" }}
                       variant="standard"
+                      inputProps={{ inputMode: "numeric" }}
                       error={!!fields.expiration.error}
                       helperText={fields.expiration.error}
+                      value={fields.expiration.value}
+                      onChange={(e) =>
+                        handleChange("expiration", e.target.value)
+                      }
                     />
                   </Paper>
                 </Collapse>
               </Box>
             </Paper>
-            {/* Submit Button */}
+
             <Box mt={3}>
               <Button
                 type="submit"
                 variant="contained"
-                color="primary"
                 disabled={
                   isLoading ||
                   !selectedFile ||
                   !coverImage ||
                   Object.entries(fields).some(
-                    ([key, field]) => key !== "description" && (field.error || !field.value)
+                    ([k, f]) =>
+                      k !== "description" && (f.error || !f.value)
                   )
                 }
               >
                 {isLoading ? "Uploading..." : "Upload"}
               </Button>
+
               {errorMessage && (
                 <Typography color="error" variant="body2" mt={2}>
                   {errorMessage}
@@ -238,27 +248,34 @@ const UploadFile = () => {
               )}
             </Box>
           </Grid>
-          <Grid item xs={12} md={6} order={{ xs: 1, md: 2 }}>
-            {/** STL FILE BOX */}
+
+          {/* Right Column */}
+          <Grid size={{ xs: 1, md: 6 }} order={{ xs: 1, md: 2 }}>
+            {/* STL Box */}
             <Box
               mb={3}
               sx={{
                 position: "relative",
                 border: "2px dashed #ccc",
                 borderRadius: 2,
-                padding: 2,
+                p: 2,
                 textAlign: "center",
                 cursor: previewUrl ? "default" : "pointer",
-                '&:hover': { backgroundColor: previewUrl ? "inherit" : "#f9f9f9" }
+                "&:hover": {
+                  backgroundColor: previewUrl ? "inherit" : "#f9f9f9"
+                }
               }}
-              onClick={!previewUrl ? () => document.getElementById("stl-file-input")?.click() : undefined}
+              onClick={() =>
+                !previewUrl &&
+                document.getElementById("stl-file-input")?.click()
+              }
             >
               <input
+                id="stl-file-input"
                 type="file"
                 accept=".stl"
                 onChange={handleFileChange}
                 style={{ display: "none" }}
-                id="stl-file-input"
               />
 
               {previewUrl ? (
@@ -266,50 +283,55 @@ const UploadFile = () => {
                   <Button
                     variant="outlined"
                     size="small"
-                    sx={{
-                      position: "absolute",
-                      top: 8,
-                      right: 8,
-                      zIndex: 1
-                    }}
-                    onClick={() => document.getElementById("stl-file-input")?.click()}
+                    sx={{ position: "absolute", top: 8, right: 8, zIndex: 1 }}
+                    onClick={() =>
+                      document.getElementById("stl-file-input")?.click()
+                    }
                   >
                     Change
                   </Button>
-                  <Typography variant="h6" gutterBottom>STL Preview:</Typography>
+
+                  <Typography variant="h6" gutterBottom>
+                    STL Preview:
+                  </Typography>
                   <StlViewer
                     url={previewUrl}
-                    style={{ width: '100%', height: '300px' }}
+                    style={{ width: "100%", height: "300px" }}
                     orbitControls
                   />
                 </>
               ) : (
-                <Typography variant="body1" color="textSecondary">
+                <Typography color="textSecondary">
                   Click here to upload an STL file
                 </Typography>
               )}
             </Box>
 
-            {/** COVER IMAGE BOX */}
+            {/* Cover Image Box */}
             <Box
               mb={3}
               sx={{
                 position: "relative",
                 border: "2px dashed #ccc",
                 borderRadius: 2,
-                padding: 2,
+                p: 2,
                 textAlign: "center",
                 cursor: coverPreviewUrl ? "default" : "pointer",
-                '&:hover': { backgroundColor: coverPreviewUrl ? "inherit" : "#f9f9f9" }
+                "&:hover": {
+                  backgroundColor: coverPreviewUrl ? "inherit" : "#f9f9f9"
+                }
               }}
-              onClick={!coverPreviewUrl ? () => document.getElementById("cover-image-input")?.click() : undefined}
+              onClick={() =>
+                !coverPreviewUrl &&
+                document.getElementById("cover-image-input")?.click()
+              }
             >
               <input
+                id="cover-image-input"
                 type="file"
                 accept="image/png, image/jpg, image/jpeg, image/webp"
                 onChange={handleCoverChange}
                 style={{ display: "none" }}
-                id="cover-image-input"
               />
 
               {coverPreviewUrl ? (
@@ -317,28 +339,33 @@ const UploadFile = () => {
                   <Button
                     variant="outlined"
                     size="small"
-                    sx={{
-                      position: "absolute",
-                      top: 8,
-                      right: 8,
-                      zIndex: 1
-                    }}
+                    sx={{ position: "absolute", top: 8, right: 8, zIndex: 1 }}
                     onClick={(e) => {
                       e.stopPropagation()
-                      document.getElementById("cover-image-input")?.click()
+                      document
+                        .getElementById("cover-image-input")
+                        ?.click()
                     }}
                   >
                     Change
                   </Button>
-                  <Typography variant="h6" gutterBottom>Cover Preview:</Typography>
-                  <img
+
+                  <Typography variant="h6" gutterBottom>
+                    Cover Preview:
+                  </Typography>
+                  <Box
+                    component="img"
                     src={coverPreviewUrl}
                     alt="Cover Preview"
-                    style={{ maxWidth: "100%", maxHeight: "300px", borderRadius: 4 }}
+                    sx={{
+                      maxWidth: "100%",
+                      maxHeight: 300,
+                      borderRadius: 2
+                    }}
                   />
                 </>
               ) : (
-                <Typography variant="body1" color="textSecondary">
+                <Typography color="textSecondary">
                   Click here to upload a cover image
                 </Typography>
               )}
@@ -346,18 +373,26 @@ const UploadFile = () => {
           </Grid>
         </Grid>
       </form>
-      <Backdrop open={isLoading && !showSuccess} sx={{ zIndex: 1301, color: '#fff' }}>
-        <Box display="flex" flexDirection="column" alignItems="center" gap={2}>
+
+      {/* Processing Backdrops */}
+      <Backdrop
+        open={isLoading && !showSuccess}
+        sx={{ zIndex: 1301, color: "#fff" }}
+      >
+        <Box textAlign="center">
           <CircularProgress color="inherit" />
-          <Typography variant="h6">{statusText || "Processing..."}</Typography>
+          <Typography variant="h6" mt={2}>
+            {statusText || "Processing..."}
+          </Typography>
         </Box>
       </Backdrop>
-      <Backdrop open={showSuccess} sx={{ zIndex: 1302, color: '#fff' }}>
-        <Box display="flex" flexDirection="column" alignItems="center" gap={2}>
+
+      <Backdrop open={showSuccess} sx={{ zIndex: 1302, color: "#fff" }}>
+        <Box textAlign="center">
           <Typography variant="h4" fontWeight={600}>
             Upload Successful!
           </Typography>
-          <Typography variant="body1">
+          <Typography variant="body1" mt={1}>
             Redirecting to home in 5 seconds...
           </Typography>
         </Box>

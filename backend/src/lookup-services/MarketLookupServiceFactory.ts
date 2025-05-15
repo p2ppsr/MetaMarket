@@ -3,7 +3,6 @@ import { PushDrop, Utils } from '@bsv/sdk'
 import { MarketStorage } from './MarketStorage.js'
 import docs from './MarketLookupDocs.md.js'
 import { Db } from 'mongodb'
-import { StoreReference, DetailsReference } from '../types.js'
 
 /**
  * Implements a Market lookup service
@@ -25,7 +24,6 @@ class MarketLookupService implements LookupService {
    * @returns 
    */
   async outputAdmittedByTopic(payload: OutputAdmittedByTopic): Promise<void> {
-    console.log('YIPPEE')
     if (payload.mode !== 'locking-script') throw new Error('Invalid mode')
     const { topic, lockingScript, txid, outputIndex } = payload
     if (topic !== 'tm_market') throw new Error(`Invalid topic "${topic}" for this service.`)
@@ -106,60 +104,40 @@ class MarketLookupService implements LookupService {
       }
 
       if (query === 'findStore') {
-        const result: StoreReference[] = await this.storage.findStore();
-        return {
-          type: 'freeform',
-          result: result,
-        };
+        return await this.storage.findStore();
       }
 
       if (isFindDetailsQuery(query)) {
-        const { txid, outputIndex } = query.value;
-        if (!txid || outputIndex === undefined) {
-          throw new Error('findDetails query must include txid and outputIndex.');
-        }
-
-        const result: DetailsReference[] = await this.storage.findDetails(txid, outputIndex);
-        return {
-          type: 'freeform',
-          result,
-        };
+        const { txid, outputIndex } = query.value
+        console.log(txid, outputIndex)
+        return [{ txid, outputIndex }]
       }
 
       if (isUrlCheckQuery(query)) {
         const { fileUrl } = query.value
-        const result: boolean = await this.storage.isFileUrlInDatabase(fileUrl)
-        return {
-          type: 'freeform',
-          result
-        }
+        return await this.storage.isFileUrlInDatabase(fileUrl)
       }
 
       if (isUploaderFilesQuery(query)) {
         const { publicKey } = query.value
-        const result = await this.storage.findByUploaderPublicKey(publicKey)
-        return {
-          type: 'freeform',
-          result
-        }
+        return await this.storage.findByUploaderPublicKey(publicKey)
+      }
+
+      if (isUploaderFilesQueryExpired(query)) {
+        const { publicKey } = query.value
+        return await this.storage.findByUploaderPublicKeyExpired(publicKey)
       }
 
       if (isDeleteFile(query)) {
         const { txid, outputIndex } = query.value
-        const result = await this.storage.deleteRecord(txid, outputIndex)
-        return {
-          type: 'freeform',
-          result
-        }
+        const i = await this.storage.deleteRecord(txid, outputIndex)
+        console.log(`${i} file deleted`, txid)
+        return []
       }
 
       if (isNameSearchQuery(query)) {
         const { name } = query.value
-        const results = await this.storage.findByName(name)
-        return {
-          type: 'freeform',
-          result: results
-        }
+        return await this.storage.findByName(name)
       }
 
       throw new Error('Unknown query type');
@@ -219,6 +197,16 @@ function isUploaderFilesQuery(query: any): query is { type: 'findUploaderFiles',
   return (
     typeof query === 'object' &&
     query.type === 'findUploaderFiles' &&
+    query.value &&
+    typeof query.value.publicKey === 'string'
+  )
+}
+
+
+function isUploaderFilesQueryExpired(query: any): query is { type: 'findUploaderFilesExpired', value: { publicKey: string } } {
+  return (
+    typeof query === 'object' &&
+    query.type === 'findUploaderFilesExpired' &&
     query.value &&
     typeof query.value.publicKey === 'string'
   )
