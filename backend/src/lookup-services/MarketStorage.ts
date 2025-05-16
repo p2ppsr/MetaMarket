@@ -30,7 +30,8 @@ export class MarketStorage {
       txid,
       outputIndex,
       retentionPeriod,
-      coverUrl
+      coverUrl,
+      createdAt: Date.now()
     })
     try {
       // Insert new record

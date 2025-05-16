@@ -77,7 +77,7 @@ const Store: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       {/* Header */}
-      <Typography component={'span'} variant="h4">
+      <Typography component={'span'} variant="h4" gutterBottom>
         Browse Files
       </Typography>
       {/* Search Bar */}
