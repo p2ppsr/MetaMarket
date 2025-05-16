@@ -11,7 +11,6 @@ export interface DecodedOutput {
     outputIndex: number
     retentionPeriod?: number
     coverUrl?: string
-    createdAt?: Date
 }
 
 type FieldKey = keyof DecodedOutput
@@ -59,11 +58,6 @@ export async function decodeOutput(
                 break
             case 'coverUrl':
                 record.coverUrl = Utils.toUTF8(Utils.toArray(data[7]))
-                break
-            case 'createdAt':
-                record.createdAt = new Date(
-                    parseInt(Utils.toUTF8(Utils.toArray(data[8])), 10)
-                )
                 break
             case 'txid':
             case 'outputIndex':

@@ -18,7 +18,6 @@ interface DetailsRecord {
   outputIndex: number
   retentionPeriod: number
   coverUrl: string
-  createdAt: Date
 }
 
 const fields: (keyof DecodedOutput)[] = [
@@ -32,7 +31,6 @@ const fields: (keyof DecodedOutput)[] = [
   'outputIndex',
   'retentionPeriod',
   'coverUrl',
-  'createdAt'
 ]
 
 const Details: React.FC = () => {
@@ -85,7 +83,7 @@ const Details: React.FC = () => {
       const authFetch = new AuthFetch(wallet)
 
       const keyUrl = `${constants.keyServer}/purchase/${fileUrl}`
-      debugger
+      
       let payResponse
       try {
         payResponse = await authFetch.fetch(
@@ -133,6 +131,17 @@ const Details: React.FC = () => {
       setIsLoading(false)
     }
   }
+
+  const handleDownload = async () => {
+    if (!decryptedFileURL) return
+    const a = document.createElement('a')
+    a.href = decryptedFileURL
+    a.download = `${details?.name || 'download'}.stl`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
   if (isLoading) {
     return (
       <Box textAlign="center" mt={8}>
@@ -148,10 +157,6 @@ const Details: React.FC = () => {
       </Typography>
     )
   }
-
-  // Helper to truncate the uploader key
-  const uploaderShort = `${details.creatorPublicKey.slice(0, 8)}…${details.creatorPublicKey.slice(-8)}`
-
   return (
     <Container sx={{ mt: 4, mb: 4 }}>
       {/* Single big box */}
@@ -198,10 +203,6 @@ const Details: React.FC = () => {
               </Grid>
               <Grid size={{ xs: 1, sm: 6 }}>
                 <Typography>
-                  <strong>Uploaded:</strong>{' '}
-                  {new Date(details.createdAt).toLocaleString()}
-                </Typography>
-                <Typography>
                   <strong>Expires:</strong>{' '}
                   {new Date(details.retentionPeriod).toLocaleString()}
                 </Typography>
@@ -223,27 +224,24 @@ const Details: React.FC = () => {
 
           {/* Purchase Area */}
           <Grid size={{ xs: 1, md: 4 }}>
-            <Box sx={{ textAlign: 'center', mt: 3 }}>
-              <Button
-                variant="contained"
-                size="large"
-                onClick={handlePurchase}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Purchasing...' : 'Purchase File'}
-              </Button>
-              {decryptedFileURL && (
+            <Box sx={{ textAlign: 'center', mt: 4 }}>
+              {!decryptedFileURL ? (
                 <Button
-                  variant="outlined"
-                  sx={{ mt: 2 }}
-                  onClick={() => {
-                    const a = document.createElement('a')
-                    a.href = decryptedFileURL
-                    a.download = `${details.name}.stl`
-                    document.body.appendChild(a)
-                    a.click()
-                    document.body.removeChild(a)
-                  }}
+                  variant="contained"
+                  size="large"
+                  onClick={handlePurchase}
+                  disabled={isLoading}
+                  sx={{ px: 6, borderRadius: 2 }}
+                >
+                  {isLoading ? 'Purchasing...' : 'Purchase File'}
+                </Button>
+              ) : (
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  size="medium"
+                  onClick={handleDownload}
+                  sx={{ px: 6, borderRadius: 2 }}
                 >
                   Download File
                 </Button>
