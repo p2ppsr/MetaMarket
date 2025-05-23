@@ -25,7 +25,7 @@
       ]
     },
     {
-      "name": "babbage",
+      "name": "MetaMarket",
       "provider": "CARS",
       "CARSCloudURL": "https://cars.babbage.systems",
       "projectID": "ea98977f72defcf56238a39a35af6875",

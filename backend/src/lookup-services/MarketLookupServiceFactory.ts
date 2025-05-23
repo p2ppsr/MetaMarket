@@ -19,7 +19,7 @@ class MarketLookupService implements LookupService {
   constructor(public storage: MarketStorage) { }
 
   /**
-   * 
+   * Invoked when a Topic Manager admits a new UTXO
    * @param payload - The output admitted by the topic manager
    * @returns 
    */
@@ -60,7 +60,7 @@ class MarketLookupService implements LookupService {
   }
 
   /**
-   * 
+   * Invoked when a previously-admitted UTXO is spent
    * @param payload - The output admitted by the topic manager
    */
   async outputSpent(payload: OutputSpent): Promise<void> {
