@@ -1,3 +1,16 @@
+export interface DecodedOutput {
+    fileUrl?: string
+    name?: string
+    description?: string
+    satoshis?: number
+    creatorPublicKey?: string
+    size?: number
+    txid: string
+    outputIndex: number
+    retentionPeriod?: number
+    coverUrl?: string
+}
+
 export interface KeyRecord {
     fileUrl: string
     encryptionKey: string

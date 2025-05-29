@@ -9,7 +9,9 @@ import { getWallet } from './utils/walletSingleton.js'
 import { MongoClient } from 'mongodb'
 import { KeyStorage } from './KeyStorage.js'
 import crypto, { randomBytes } from 'crypto'
-import { decodeOutputs, DecodedOutput } from './utils/decodeOutputs.js'
+import { decodeOutputs } from './utils/decodeOutputs.js'
+import { DecodedOutput } from './types.js'
+
 
 (global.self as any) = { crypto }
 
@@ -72,14 +74,14 @@ app.use(express.static('public'))
 
 const wallet = await getWallet()
 
-const authMiddleware = createAuthMiddleware({
+app.use(createAuthMiddleware({
   wallet,
   allowUnauthenticated: false,
   logger: console,
   logLevel: 'debug'
-})
+}))
 
-const paymentMiddleware = createPaymentMiddleware({
+app.use(createPaymentMiddleware({
   wallet,
   calculateRequestPrice: async (req) => {
     if (!req.url.includes('/purchase')) {
@@ -98,10 +100,7 @@ const paymentMiddleware = createPaymentMiddleware({
       return 0
     }
   }
-})
-
-app.use(authMiddleware)
-app.use(paymentMiddleware)
+}))
 
 app.post('/submit', async (req: Request, res: Response) => {
   try {
@@ -112,7 +111,7 @@ app.post('/submit', async (req: Request, res: Response) => {
     }
 
     console.log(`File URL: ${fileUrl}`)
-    // Checking if the file is on UHRP
+    // checking if the file is on UHRP
     if (!StorageUtils.isValidURL(fileUrl)) {
       return res.status(400).json({ message: `Invalid file Url: ${fileUrl}` });
     }
@@ -140,7 +139,7 @@ app.post('/submit', async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'File not found on UHRP', fileUrl });
     }
 
-    // Checking the encryption
+    // checking the encryption
     const uhrpFile = await storageDownloader.download(fileUrl)
     const encryptedDataArray = uhrpFile.data
     if (!encryptedDataArray || encryptedDataArray.length === 0) {
@@ -148,6 +147,7 @@ app.post('/submit', async (req: Request, res: Response) => {
     }
 
     try {
+      // ensure that the file decrypts
       const symmetricKey = new SymmetricKey(encryptionKey, 'hex')
       const decryptedFile = symmetricKey.decrypt(encryptedDataArray)
       console.log('File decrypted successfully, length:', decryptedFile.length)
@@ -156,6 +156,7 @@ app.post('/submit', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Failed to decrypt file' })
     }
 
+    // checking if the file is properlly stored in the backend server
     const lookupResolver = new LookupResolver({ networkPreset: BSV_NETWORK })
     const check = await lookupResolver.query({
       service: 'ls_market',
@@ -176,6 +177,7 @@ app.post('/submit', async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'File not found on backend server' })
     }
 
+    // calling the store class to finally store the file url and its key in the database
     await keyStorage.storeRecord(fileUrl, encryptionKey, satoshis, publicKey)
 
     return res.status(200).json({ message: 'File metadata saved successfully' })

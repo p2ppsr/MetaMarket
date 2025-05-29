@@ -1,17 +1,5 @@
 import { Transaction, PushDrop, Utils } from '@bsv/sdk'
-
-export interface DecodedOutput {
-    fileUrl?: string
-    name?: string
-    description?: string
-    satoshis?: number
-    creatorPublicKey?: string
-    size?: number
-    txid: string
-    outputIndex: number
-    retentionPeriod?: number
-    coverUrl?: string
-}
+import { DecodedOutput } from 'src/types.js'
 
 type FieldKey = keyof DecodedOutput
 

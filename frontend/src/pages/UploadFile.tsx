@@ -16,7 +16,7 @@ const fetchPublicKey = async (): Promise<string> => {
   }
 }
 
-const UploadFile = () => {
+const UploadFile: React.FC = () => {
   const navigate = useNavigate()
 
   const [isLoading, setIsLoading] = useState(false)
