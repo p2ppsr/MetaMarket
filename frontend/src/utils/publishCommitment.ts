@@ -1,4 +1,4 @@
-import { SymmetricKey, TaggedBEEF, StorageUploader, WalletClient, Utils, PushDrop, TopicBroadcaster, Transaction, AuthFetch, StorageUtils, StorageDownloader, LookupResolver } from '@bsv/sdk'
+import { SymmetricKey, StorageUploader, WalletClient, Utils, PushDrop, TopicBroadcaster, Transaction, AuthFetch, StorageUtils, LookupResolver } from '@bsv/sdk'
 import constants from '../constants'
 
 export async function publishCommitment({

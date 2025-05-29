@@ -1,5 +1,5 @@
 import express, { Express, Request, Response, NextFunction } from 'express'
-import bodyParser, { json } from 'body-parser'
+import bodyParser from 'body-parser'
 import prettyjson from 'prettyjson'
 import dotenv from 'dotenv'
 import { SymmetricKey, Utils, StorageUtils, StorageDownloader, P2PKH, PublicKey, PrivateKey, LookupResolver } from '@bsv/sdk'

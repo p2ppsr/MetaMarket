@@ -1,4 +1,4 @@
-import { Collection, Db, DeleteResult } from 'mongodb';
+import { Collection, Db } from 'mongodb';
 import { KeyRecord, BalanceRecord } from './types.js';
 import dotenv from 'dotenv'
 
