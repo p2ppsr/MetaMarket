@@ -121,7 +121,8 @@ app.post('/submit', async (req: Request, res: Response) => {
     for (let attempt = 1; attempt <= 6; attempt++) {
       try {
         resolvedUrl = await storageDownloader.resolve(fileUrl)
-        if (resolvedUrl) {
+        if (resolvedUrl.length > 0) {
+          console.log('Resolved URL:', resolvedUrl)
           break
         }
       } catch (error) {
@@ -135,6 +136,7 @@ app.post('/submit', async (req: Request, res: Response) => {
     }
 
     if (!resolvedUrl || resolvedUrl.length === 0) {
+      console.error('File not found on UHRP:', fileUrl)
       return res.status(404).json({ message: 'File not found on UHRP', fileUrl });
     }
 
@@ -142,6 +144,7 @@ app.post('/submit', async (req: Request, res: Response) => {
     const uhrpFile = await storageDownloader.download(fileUrl)
     const encryptedDataArray = uhrpFile.data
     if (!encryptedDataArray || encryptedDataArray.length === 0) {
+      console.error('Downloaded file is empty')
       return res.status(400).json({ message: 'Downloaded file is empty' })
     }
 
