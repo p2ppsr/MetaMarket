@@ -1,4 +1,4 @@
-import { SymmetricKey, StorageUploader, WalletClient, Utils, PushDrop, TopicBroadcaster, Transaction, AuthFetch, StorageUtils, LookupResolver } from '@bsv/sdk'
+import { AuthFetch, PushDrop, StorageUploader, StorageUtils, SymmetricKey, TopicBroadcaster, Transaction, Utils, WalletClient } from '@bsv/sdk'
 import constants from '../constants'
 
 export async function publishCommitment({
@@ -84,7 +84,7 @@ export async function publishCommitment({
       'anyone',
       true
     )
-    
+
     console.log(`${stl.uhrpURL}\n${name}\n${description}\n${satoshis}\n${publicKey}\n${file.size}\n${expiryTime}\n${cover.uhrpURL}`)
     const { txid, tx } = await wallet.createAction({
       outputs: [{
@@ -128,25 +128,12 @@ export async function publishCommitment({
           'Content-Type': 'application/json'
         }
       })
-
       if (!response.ok) {
         throw new Error(response.statusText)
       }
     } catch (error) {
       setStatusText('Error uploading to MetaMarket')
       await new Promise((resolve) => setTimeout(resolve, 5000))
-      const txidString = txid || ''
-
-      const lookupResolver = new LookupResolver({ networkPreset: window.location.hostname === 'localhost' ? 'local' : 'mainnet' })
-      const lookupResponse = await lookupResolver.query({
-        service: 'ls_market',
-        query: {
-          type: 'deleteFile',
-          value: { txid: txidString, outputIndex: 0 }
-        }
-      })
-      if (lookupResponse.type != 'output-list') throw new Error('Lookup answer must be an output-list')
-      console.log(`Removed ${txidString} file from backend server`)
 
       // Redeeming the transaction created before
       const { signableTransaction } = await wallet.createAction({
@@ -160,7 +147,8 @@ export async function publishCommitment({
       })
       if (!signableTransaction) throw new Error('Token must be spendable')
 
-      const unlocker = pushdrop.unlock([0, 'signing'], '1', 'anyone', undefined, true)
+      const unlocker = pushdrop.unlock([2, 'metamarket'], '1', 'anyone', undefined, true)
+
       const partialTx = Transaction.fromAtomicBEEF(signableTransaction.tx)
       const unlockingScript = await unlocker.sign(partialTx, 0)
 
@@ -172,9 +160,10 @@ export async function publishCommitment({
           }
         }
       });
+      if (!action) throw new Error('Spend token failed.')
 
-      console.log('Token Spent:', action)
-
+      const spend = await broadcaster.broadcast(Transaction.fromAtomicBEEF(action.tx as number[]))
+      console.log('Token Spent:', spend)
       throw new Error('Key server registration failed.')
     }
 

@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { Container, Typography, Box, Button, Paper, Grid, Backdrop, CircularProgress } from '@mui/material'
-import Markdown from 'react-markdown'
-import { AuthFetch, SymmetricKey, WalletClient, StorageDownloader, LookupResolver } from '@bsv/sdk'
+import { AuthFetch, LookupResolver, StorageDownloader, SymmetricKey, WalletClient } from '@bsv/sdk'
 import { Img } from '@bsv/uhrp-react'
+import { Backdrop, Box, Button, CircularProgress, Container, Grid, Paper, Typography } from '@mui/material'
+import React, { useEffect, useState } from 'react'
+import Markdown from 'react-markdown'
+import { useParams } from 'react-router-dom'
 import constants from '../constants'
-import { decodeOutputs, DecodedOutput } from '../utils/decodeOutputs'
+import { DecodedOutput, decodeOutputs } from '../utils/decodeOutputs'
 
 interface DetailsRecord {
   fileUrl: string
@@ -83,7 +83,7 @@ const Details: React.FC = () => {
       const authFetch = new AuthFetch(wallet)
 
       const keyUrl = `${constants.keyServer}/purchase/${fileUrl}`
-      
+
       let payResponse
       try {
         payResponse = await authFetch.fetch(

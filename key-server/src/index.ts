@@ -1,17 +1,16 @@
-import express, { Express, Request, Response, NextFunction } from 'express'
-import bodyParser from 'body-parser'
-import prettyjson from 'prettyjson'
-import dotenv from 'dotenv'
-import { SymmetricKey, Utils, StorageUtils, StorageDownloader, P2PKH, PublicKey, PrivateKey, LookupResolver } from '@bsv/sdk'
 import { createAuthMiddleware } from '@bsv/auth-express-middleware'
 import { createPaymentMiddleware } from '@bsv/payment-express-middleware'
-import { getWallet } from './utils/walletSingleton.js'
-import { MongoClient } from 'mongodb'
-import { KeyStorage } from './KeyStorage.js'
+import { LookupResolver, P2PKH, PrivateKey, PublicKey, StorageDownloader, StorageUtils, SymmetricKey, Utils } from '@bsv/sdk'
+import bodyParser from 'body-parser'
 import crypto, { randomBytes } from 'crypto'
-import { decodeOutputs } from './utils/decodeOutputs.js'
+import dotenv from 'dotenv'
+import express, { Express, NextFunction, Request, Response } from 'express'
+import { MongoClient } from 'mongodb'
+import prettyjson from 'prettyjson'
+import { KeyStorage } from './KeyStorage.js'
 import { DecodedOutput } from './types.js'
-
+import { decodeOutputs } from './utils/decodeOutputs.js'
+import { getWallet } from './utils/walletSingleton.js'
 
 (global.self as any) = { crypto }
 
@@ -21,7 +20,7 @@ const PORT = process.env.PORT || 3000
 const SERVER_PRIVATE_KEY = process.env.SERVER_PRIVATE_KEY as string
 const MONGO_URI = process.env.MONGO_URI as string
 const DATABASE_NAME = process.env.DATABASE_NAME as string
-const BSV_NETWORK = process.env.BSV_NETWORK as 'mainnet' | 'testnet'
+const NETWORK_PRESET = process.env.NETWORK_PRESET as 'local' | 'mainnet' | 'testnet'
 
 // Let TypeScript know there is possibly an authrite prop on incoming requests
 declare module 'express-serve-static-core' {
@@ -127,7 +126,7 @@ app.post('/submit', async (req: Request, res: Response) => {
         }
       } catch (error) {
         console.log(`Download attempt ${attempt} failed:`, error)
-        if (attempt < 12) {
+        if (attempt < 6) {
           await new Promise((resolve) => setTimeout(resolve, 5000))
         } else {
           throw new Error(`Download failed after ${attempt} attempts`)
@@ -157,24 +156,33 @@ app.post('/submit', async (req: Request, res: Response) => {
     }
 
     // checking if the file is properlly stored in the backend server
-    const lookupResolver = new LookupResolver({ networkPreset: BSV_NETWORK })
-    const check = await lookupResolver.query({
-      service: 'ls_market',
-      query: {
-        type: 'urlCheck',
-        value: { fileUrl }
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      const lookupResolver = new LookupResolver({ networkPreset: NETWORK_PRESET })
+      const check = await lookupResolver.query({
+        service: 'ls_market',
+        query: {
+          type: 'urlCheck',
+          value: { fileUrl }
+        }
+      })
+      if (check.type !== 'output-list') throw new Error('Lookup answer must be an output-list')
+
+      const fields: (keyof DecodedOutput)[] = [
+        'txid',
+        'outputIndex'
+      ]
+      const result = await decodeOutputs(check.outputs, fields)
+
+      if (result.length >= 0) {
+        break
       }
-    })
-    if (check.type !== 'output-list') throw new Error('Lookup answer must be an output-list')
 
-    const fields: (keyof DecodedOutput)[] = [
-      'txid',
-      'outputIndex'
-    ]
-    const result = await decodeOutputs(check.outputs, fields)
-
-    if (result.length <= 0) {
-      return res.status(404).json({ message: 'File not found on backend server' })
+      console.log(`Lookup attempt ${attempt} failed`)
+      if (attempt < 6) {
+        await new Promise((resolve) => setTimeout(resolve, 5000))
+      } else {
+        throw new Error(`Lookup failed after ${attempt} attempts`)
+      }
     }
 
     // calling the store class to finally store the file url and its key in the database

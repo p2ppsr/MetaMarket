@@ -1,8 +1,8 @@
-import { LookupService, LookupQuestion, LookupAnswer, LookupFormula, AdmissionMode, SpendNotificationMode, OutputAdmittedByTopic, OutputSpent } from '@bsv/overlay'
+import { AdmissionMode, LookupAnswer, LookupFormula, LookupQuestion, LookupService, OutputAdmittedByTopic, OutputSpent, SpendNotificationMode } from '@bsv/overlay'
 import { PushDrop, Utils } from '@bsv/sdk'
-import { MarketStorage } from './MarketStorage.js'
-import docs from './MarketLookupDocs.md.js'
 import { Db } from 'mongodb'
+import docs from './MarketLookupDocs.md.js'
+import { MarketStorage } from './MarketStorage.js'
 
 /**
  * Implements a Market lookup service
@@ -128,13 +128,6 @@ class MarketLookupService implements LookupService {
         return await this.storage.findByUploaderPublicKeyExpired(publicKey)
       }
 
-      if (isDeleteFile(query)) {
-        const { txid, outputIndex } = query.value
-        const i = await this.storage.deleteRecord(txid, outputIndex)
-        console.log(`${i} file deleted`, txid)
-        return []
-      }
-
       if (isNameSearchQuery(query)) {
         const { name } = query.value
         return await this.storage.findByName(name)
@@ -209,16 +202,6 @@ function isUploaderFilesQueryExpired(query: any): query is { type: 'findUploader
     query.type === 'findUploaderFilesExpired' &&
     query.value &&
     typeof query.value.publicKey === 'string'
-  )
-}
-
-function isDeleteFile(query: any): query is { type: 'deleteFile', value: { txid: string, outputIndex: number } } {
-  return (
-    typeof query === 'object' &&
-    query.type === 'deleteFile' &&
-    query.value &&
-    typeof query.value.txid === 'string' &&
-    typeof query.value.outputIndex === 'number'
   )
 }
 

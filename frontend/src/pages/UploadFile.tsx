@@ -1,10 +1,10 @@
-import { Container, Box, Typography, Button, Input, TextField, Paper, Collapse, Backdrop, CircularProgress, Grid } from "@mui/material"
-import React, { useState, type FormEvent, ChangeEvent } from "react"
-import { toast } from "react-toastify";
-import { StlViewer } from "react-stl-viewer"
-import { publishCommitment } from "../utils/publishCommitment"
-import { WalletClient } from "@bsv/sdk"
+import { WalletClient } from "@bsv/sdk";
+import { Backdrop, Box, Button, CircularProgress, Collapse, Container, Grid, Paper, TextField, Typography } from "@mui/material";
+import React, { ChangeEvent, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { StlViewer } from "react-stl-viewer";
+import { toast } from "react-toastify";
+import { publishCommitment } from "../utils/publishCommitment";
 const fetchPublicKey = async (): Promise<string> => {
   try {
     const client = new WalletClient()

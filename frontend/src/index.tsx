@@ -1,10 +1,10 @@
-import ReactDOM from 'react-dom/client'
 import { CssBaseline } from '@mui/material'
 import { ThemeProvider } from '@mui/material/styles'
-import App from './App'
-import web3Theme from './theme'
+import ReactDOM from 'react-dom/client'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import App from './App'
+import web3Theme from './theme'
 
 const rootElement = document.getElementById('root')
 

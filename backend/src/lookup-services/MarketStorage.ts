@@ -61,7 +61,6 @@ export class MarketStorage {
    */
   async deleteRecord(txid: string, outputIndex: number): Promise<number> {
     return (await this.records.deleteMany({ txid, outputIndex })).deletedCount
-
   }
 
   // TODO maybe change the UTXOReference type to have more info to use(?)

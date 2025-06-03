@@ -1,10 +1,10 @@
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 import Layout from './Layout'
-import UploadFile from './pages/UploadFile'
-import Store from './pages/Store'
-import Details from './pages/Details'
 import Account from './pages/Account'
+import Details from './pages/Details'
+import Store from './pages/Store'
+import UploadFile from './pages/UploadFile'
 
 const App: React.FC = () => {
   return (

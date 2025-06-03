@@ -1,6 +1,6 @@
-import { Collection, Db } from 'mongodb';
-import { KeyRecord, BalanceRecord } from './types.js';
 import dotenv from 'dotenv'
+import { Collection, Db } from 'mongodb'
+import { BalanceRecord, KeyRecord } from './types.js'
 
 dotenv.config()
 
