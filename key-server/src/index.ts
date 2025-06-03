@@ -77,7 +77,7 @@ app.use(createAuthMiddleware({
   wallet,
   allowUnauthenticated: false,
   logger: console,
-  logLevel: 'debug'
+  logLevel: 'error'
 }))
 
 app.use(createPaymentMiddleware({
@@ -103,6 +103,7 @@ app.use(createPaymentMiddleware({
 
 app.post('/submit', async (req: Request, res: Response) => {
   try {
+    debugger
     const { fileUrl, encryptionKey, satoshis, publicKey } = req.body;
 
     if (!fileUrl || !encryptionKey || !satoshis || !publicKey) {
@@ -119,19 +120,18 @@ app.post('/submit', async (req: Request, res: Response) => {
 
     let resolvedUrl
     for (let attempt = 1; attempt <= 6; attempt++) {
-      try {
-        resolvedUrl = await storageDownloader.resolve(fileUrl)
-        if (resolvedUrl.length > 0) {
-          console.log('Resolved URL:', resolvedUrl)
-          break
-        }
-      } catch (error) {
-        console.log(`Download attempt ${attempt} failed:`, error)
-        if (attempt < 6) {
-          await new Promise((resolve) => setTimeout(resolve, 5000))
-        } else {
-          throw new Error(`Download failed after ${attempt} attempts`)
-        }
+      resolvedUrl = await storageDownloader.resolve(fileUrl)
+      debugger
+      if (resolvedUrl.length > 0) {
+        console.log(`Resolved URL in ${attempt} attempts:`, resolvedUrl)
+        break
+      }
+      if (attempt < 6) {
+        console.log(`Download attempt ${attempt} failed`)
+        await new Promise((resolve) => setTimeout(resolve, 5000))
+      } else {
+        console.error(`Download failed after ${attempt} attempts`)
+        throw new Error(`Download failed after ${attempt} attempts`)
       }
     }
 
@@ -177,6 +177,7 @@ app.post('/submit', async (req: Request, res: Response) => {
       const result = await decodeOutputs(check.outputs, fields)
 
       if (result.length >= 0) {
+        console.log(`Lookup success in ${attempt} attempts:`, result)
         break
       }
 
@@ -243,7 +244,7 @@ app.post('/balance', async (req: Request, res: Response) => {
     if (!publicKey) return res.status(400).json({ error: 'Missing publicKey in body' })
 
     const balance = await keyStorage.getBalance(publicKey)
-    console.log('USER BALANCE:', balance)
+    console.log('User Balance:', balance)
     return res.status(200).json({
       success: true,
       balance
