@@ -103,7 +103,6 @@ app.use(createPaymentMiddleware({
 
 app.post('/submit', async (req: Request, res: Response) => {
   try {
-    debugger
     const { fileUrl, encryptionKey, satoshis, publicKey } = req.body;
 
     if (!fileUrl || !encryptionKey || !satoshis || !publicKey) {
@@ -121,7 +120,6 @@ app.post('/submit', async (req: Request, res: Response) => {
     let resolvedUrl
     for (let attempt = 1; attempt <= 6; attempt++) {
       resolvedUrl = await storageDownloader.resolve(fileUrl)
-      debugger
       if (resolvedUrl.length > 0) {
         console.log(`Resolved URL in ${attempt} attempts:`, resolvedUrl)
         break
