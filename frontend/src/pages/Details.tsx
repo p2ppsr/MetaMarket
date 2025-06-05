@@ -79,7 +79,7 @@ const Details: React.FC = () => {
 
       console.log('File url:', fileUrl)
 
-      const wallet = new WalletClient('auto', 'localohst')
+      const wallet = new WalletClient('auto', 'localhost')
       const authFetch = new AuthFetch(wallet)
 
       const keyUrl = `${constants.keyServer}/purchase/${fileUrl}`
