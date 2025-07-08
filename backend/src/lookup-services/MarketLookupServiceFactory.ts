@@ -84,7 +84,7 @@ class MarketLookupService implements LookupService {
    * @param question - The lookup question to be answered
    * @returns A promise that resolves to a lookup answer or formula
    */
-  async lookup(question: LookupQuestion): Promise<LookupAnswer | LookupFormula> {
+  async lookup(question: LookupQuestion): Promise<LookupFormula> {
     try {
       const query = question.query
 
