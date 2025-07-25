@@ -18,7 +18,7 @@ const App: React.FC = () => {
         clearInterval(intervalId)
         setMNCMissing(false)
         const Client = new WalletClient
-        Client.waitForAuthentication()
+        await Client.waitForAuthentication()
       }
     },1000)
     return () => {
