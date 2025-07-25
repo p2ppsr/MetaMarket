@@ -36,7 +36,7 @@ const App: React.FC = () => {
           <Route path="account" element={<Account />} />
         </Route>
       </Routes>
-      <NoMncModal appName={'Pollr'} open={MNCmissing} onClose={() => setMNCMissing(false)} />
+      <NoMncModal appName={'MetaMarket'} open={MNCmissing} onClose={() => setMNCMissing(false)} />
     </Router>
   )
 }
