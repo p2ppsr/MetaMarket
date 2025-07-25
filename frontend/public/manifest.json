@@ -11,5 +11,21 @@
   "start_url": ".",
   "display": "standalone",
   "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "background_color": "#ffffff",
+  "babbage": {
+    "groupPermissions": {
+      "protocolPermissions": [
+        {
+          "protocolID": [2, "metamarket"],
+          "counterparty": "...",
+          "description": "uploading and removing files"
+        },
+        {
+          "protocolID": [2, "3241645161d8"],
+          "counterparty": "...",
+          "description": "for withdrawing"
+        }
+      ]
+    }
+  }
 }
