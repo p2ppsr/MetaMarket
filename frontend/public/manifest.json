@@ -16,14 +16,29 @@
     "groupPermissions": {
       "protocolPermissions": [
         {
-          "protocolID": [2, "metamarket"],
-          "counterparty": "...",
-          "description": "uploading and removing files"
+          "protocolID": [1, "identity key retrieval"],
+          "counterparty": "self",
+          "description": "for fetching user identities"
+        },
+        {
+          "protocolID": [2, "server hmac"],
+          "counterparty": "self",
+          "description": "for deriving keys related to hmac"
         },
         {
           "protocolID": [2, "3241645161d8"],
-          "counterparty": "...",
-          "description": "for withdrawing"
+          "counterparty": "anyone",
+          "description": "for identifying users"
+        },
+        {
+          "protocolID": [2, "metamarket"],
+          "counterparty": "anyone",
+          "description": "uploading, redeeming tokens and buying stl files"
+        },
+        {
+          "protocolID": [2, "auth message signature"],
+          "counterparty": "anyone",
+          "description": "for signing messages"
         }
       ]
     }
