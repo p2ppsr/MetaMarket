@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "description": "Standard BSV project structure",
   "dependencies": {
-    "@bsv/cars-cli": "^1.2.7",
-    "@bsv/lars": "^1.5.3",
+    "@bsv/cars-cli": "^1.2.9",
+    "@bsv/lars": "^1.5.4",
     "metanet-react-prompt": "^1.0.4"
   },
   "scripts": {
