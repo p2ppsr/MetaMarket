@@ -12,8 +12,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@bsv/sdk": "^1.6.11",
-    "@bsv/uhrp-react": "^1.0.3",
+    "@bsv/sdk": "^1.7.6",
+    "@bsv/uhrp-react": "^1.0.4",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^7.1.0",
