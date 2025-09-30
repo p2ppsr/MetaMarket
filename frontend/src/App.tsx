@@ -7,8 +7,9 @@ import Details from './pages/Details'
 import Store from './pages/Store'
 import UploadFile from './pages/UploadFile'
 import {WalletClient} from '@bsv/sdk'
-const [MNCmissing, setMNCMissing] = useState<boolean>(false)
+
 const App: React.FC = () => {
+  const [MNCmissing, setMNCMissing] = useState<boolean>(false)
    useEffect(() => {
       const intervalId = setInterval(async () => {
       const hasMNC = await checkForMetaNetClient()
