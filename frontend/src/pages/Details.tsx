@@ -1,146 +1,177 @@
-import { AuthFetch, LookupResolver, StorageDownloader, SymmetricKey, WalletClient } from '@bsv/sdk'
-import { Img } from '@bsv/uhrp-react'
-import { Backdrop, Box, Button, CircularProgress, Container, Grid, Paper, Typography } from '@mui/material'
-import React, { useEffect, useState } from 'react'
-import Markdown from 'react-markdown'
-import { useParams } from 'react-router-dom'
-import constants from '../constants'
-import { DecodedOutput, decodeOutputs } from '../utils/decodeOutputs'
+import {
+  AuthFetch,
+  LookupResolver,
+  StorageDownloader,
+  SymmetricKey,
+} from "@bsv/sdk";
+import { Img } from "@bsv/uhrp-react";
+import {
+  Backdrop,
+  Box,
+  Button,
+  CircularProgress,
+  Container,
+  Grid,
+  Paper,
+  Typography,
+} from "@mui/material";
+import React, { useEffect, useState } from "react";
+import Markdown from "react-markdown";
+import { useParams } from "react-router-dom";
+import constants from "../constants";
+import { DecodedOutput, decodeOutputs } from "../utils/decodeOutputs";
+import BabbageGo from "@babbage/go";
 
 interface DetailsRecord {
-  fileUrl: string
-  name: string
-  description: string
-  satoshis: number
-  creatorPublicKey: string
-  size: number
-  txid: string
-  outputIndex: number
-  retentionPeriod: number
-  coverUrl: string
+  fileUrl: string;
+  name: string;
+  description: string;
+  satoshis: number;
+  creatorPublicKey: string;
+  size: number;
+  txid: string;
+  outputIndex: number;
+  retentionPeriod: number;
+  coverUrl: string;
 }
 
 const fields: (keyof DecodedOutput)[] = [
-  'fileUrl',
-  'name',
-  'description',
-  'satoshis',
-  'creatorPublicKey',
-  'size',
-  'txid',
-  'outputIndex',
-  'retentionPeriod',
-  'coverUrl',
-]
+  "fileUrl",
+  "name",
+  "description",
+  "satoshis",
+  "creatorPublicKey",
+  "size",
+  "txid",
+  "outputIndex",
+  "retentionPeriod",
+  "coverUrl",
+];
 
 const Details: React.FC = () => {
-  const { txid, outputIndex } = useParams<{ txid: string; outputIndex: string }>()
-  const [details, setDetails] = useState<DetailsRecord | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [decryptedFileURL, setDecryptedFileURL] = useState<string | null>(null)
-  const lookupResolver = new LookupResolver({ networkPreset: window.location.hostname === 'localhost' ? 'local' : 'mainnet' })
+  const { txid, outputIndex } = useParams<{
+    txid: string;
+    outputIndex: string;
+  }>();
+  const [details, setDetails] = useState<DetailsRecord | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [decryptedFileURL, setDecryptedFileURL] = useState<string | null>(null);
+  const lookupResolver = new LookupResolver({
+    networkPreset:
+      window.location.hostname === "localhost" ? "local" : "mainnet",
+  });
 
   useEffect(() => {
     const fetchDetails = async () => {
       try {
         const response = await lookupResolver.query({
-          service: 'ls_market',
+          service: "ls_market",
           query: {
-            type: 'findDetails',
+            type: "findDetails",
             value: {
               txid,
-              outputIndex: parseInt(outputIndex || '0', 10)
-            }
-          }
-        })
-        if (response.type !== 'output-list') throw new Error('Lookup answer must be an output-list')
+              outputIndex: parseInt(outputIndex || "0", 10),
+            },
+          },
+        });
+        if (response.type !== "output-list")
+          throw new Error("Lookup answer must be an output-list");
 
-        const fileData = await decodeOutputs(response.outputs, fields)
-        setDetails(fileData[0] as DetailsRecord)
+        const fileData = await decodeOutputs(response.outputs, fields);
+        setDetails(fileData[0] as DetailsRecord);
       } catch (error) {
-        throw new Error(`Error fetching details: ${error}`)
+        throw new Error(`Error fetching details: ${error}`);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    if (txid && outputIndex) fetchDetails()
-  }, [txid, outputIndex])
+    if (txid && outputIndex) fetchDetails();
+  }, [txid, outputIndex]);
 
   const handlePurchase = async () => {
     try {
-      if (!details) return
-      setIsLoading(true)
+      if (!details) return;
+      setIsLoading(true);
 
-      const fileUrl = details.fileUrl
+      const fileUrl = details.fileUrl;
       if (!fileUrl) {
-        throw new Error('No fileUrl available to purchase!')
+        throw new Error("No fileUrl available to purchase!");
       }
 
-      console.log('File url:', fileUrl)
+      console.log("File url:", fileUrl);
 
-      const wallet = new WalletClient('auto', 'localhost')
-      const authFetch = new AuthFetch(wallet)
+      const wallet = new BabbageGo(undefined, {
+        showModal: true,
+        design: {
+          preset: "auroraPulse",
+        },
+        monetization: {
+          developerIdentity:
+            "03ccb6ab654541f5ce16cadf0a094edd97085a9070086e4f7ae525111e13324beb",
+          developerFeeSats: 1000,
+        },
+      });
+      const authFetch = new AuthFetch(wallet);
 
-      const keyUrl = `${constants.keyServer}/purchase/${fileUrl}`
+      const keyUrl = `${constants.keyServer}/purchase/${fileUrl}`;
 
-      let payResponse
+      let payResponse;
       try {
-        payResponse = await authFetch.fetch(
-          keyUrl,
-          {
-            method: 'POST',
-            body: JSON.stringify({ fileUrl }),
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        )
+        payResponse = await authFetch.fetch(keyUrl, {
+          method: "POST",
+          body: JSON.stringify({ fileUrl }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
       } catch (error) {
-        throw new Error(`Failed to complete purchase: ${error}`)
+        throw new Error(`Failed to complete purchase: ${error}`);
       }
-      if (!payResponse) throw new Error('Failed to complete purchase')
+      if (!payResponse) throw new Error("Failed to complete purchase");
 
-      const purchaseResult = await payResponse.json()
-      const encryptionKey = purchaseResult.encryptionKey
+      const purchaseResult = await payResponse.json();
+      const encryptionKey = purchaseResult.encryptionKey;
       if (!encryptionKey) {
         if (!purchaseResult.description) {
-          throw new Error('Purchase was successful, but no encryptionKey was returned.')
-        }
-        else {
-          throw new Error(purchaseResult.description)
+          throw new Error(
+            "Purchase was successful, but no encryptionKey was returned."
+          );
+        } else {
+          throw new Error(purchaseResult.description);
         }
       }
 
-      const storageDownloader = new StorageDownloader()
-      const { data: encryptedBytes, mimeType } = await storageDownloader.download(fileUrl)
-      console.log('Downloaded file from UHRP, mimeType:', mimeType)
+      const storageDownloader = new StorageDownloader();
+      const { data: encryptedBytes, mimeType } =
+        await storageDownloader.download(fileUrl);
+      console.log("Downloaded file from UHRP, mimeType:", mimeType);
 
       // Decrypting the file
-      const symmetricKey = new SymmetricKey(encryptionKey, 'hex')
-      const decryptedBytes = symmetricKey.decrypt(encryptedBytes) as number[] // test
+      const symmetricKey = new SymmetricKey(encryptionKey, "hex");
+      const decryptedBytes = symmetricKey.decrypt(encryptedBytes) as number[]; // test
 
-      const blob = new Blob(
-        [Uint8Array.from(decryptedBytes)],
-        { type: 'model/stl' })
-      const url = URL.createObjectURL(blob)
-      setDecryptedFileURL(url)
+      const blob = new Blob([Uint8Array.from(decryptedBytes)], {
+        type: "model/stl",
+      });
+      const url = URL.createObjectURL(blob);
+      setDecryptedFileURL(url);
     } catch (error) {
-      console.error('Error during purchase:', error)
+      console.error("Error during purchase:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleDownload = async () => {
-    if (!decryptedFileURL) return
-    const a = document.createElement('a')
-    a.href = decryptedFileURL
-    a.download = `${details?.name || 'download'}.stl`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-  }
+    if (!decryptedFileURL) return;
+    const a = document.createElement("a");
+    a.href = decryptedFileURL;
+    a.download = `${details?.name || "download"}.stl`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   if (isLoading) {
     return (
@@ -148,44 +179,41 @@ const Details: React.FC = () => {
         <CircularProgress />
         <Typography mt={2}>Loading...</Typography>
       </Box>
-    )
+    );
   }
   if (!details) {
     return (
       <Typography variant="h6" color="error" textAlign="center" mt={8}>
         Unable to load details. Please try again.
       </Typography>
-    )
+    );
   }
   return (
     <Container sx={{ mt: 4, mb: 4 }}>
       {/* Single big box */}
       <Paper variant="outlined" sx={{ p: 3, mb: 4 }}>
         <Grid container spacing={3} columns={{ xs: 1, md: 12 }}>
-
           {/* Image */}
           <Grid size={{ xs: 1, md: 5 }}>
             <Box
               sx={{
-                width: '100%',
-                aspectRatio: '4/3',
-                overflow: 'hidden',
-                borderRadius: 1
+                width: "100%",
+                aspectRatio: "4/3",
+                overflow: "hidden",
+                borderRadius: 1,
               }}
             >
               <Img
                 src={details.coverUrl}
                 alt={details.name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
             </Box>
           </Grid>
 
           {/* Name & Stats */}
           <Grid size={{ xs: 1, md: 7 }}>
-            <Typography variant="h4">
-              {details.name}
-            </Typography>
+            <Typography variant="h4">{details.name}</Typography>
             <Typography variant="body2" sx={{ mb: 4 }} gutterBottom>
               <strong>Uploader</strong> {details.creatorPublicKey}
             </Typography>
@@ -203,7 +231,7 @@ const Details: React.FC = () => {
               </Grid>
               <Grid size={{ xs: 1, sm: 6 }}>
                 <Typography>
-                  <strong>Expires:</strong>{' '}
+                  <strong>Expires:</strong>{" "}
                   {new Date(details.retentionPeriod).toLocaleString()}
                 </Typography>
               </Grid>
@@ -224,7 +252,7 @@ const Details: React.FC = () => {
 
           {/* Purchase Area */}
           <Grid size={{ xs: 1, md: 4 }}>
-            <Box sx={{ textAlign: 'center', mt: 4 }}>
+            <Box sx={{ textAlign: "center", mt: 4 }}>
               {!decryptedFileURL ? (
                 <Button
                   variant="contained"
@@ -233,7 +261,7 @@ const Details: React.FC = () => {
                   disabled={isLoading}
                   sx={{ px: 6, borderRadius: 2 }}
                 >
-                  {isLoading ? 'Purchasing...' : 'Purchase File'}
+                  {isLoading ? "Purchasing..." : "Purchase File"}
                 </Button>
               ) : (
                 <Button
@@ -252,14 +280,14 @@ const Details: React.FC = () => {
       </Paper>
 
       {/* Purchase Backdrop */}
-      <Backdrop open={isLoading} sx={{ zIndex: 1300, color: '#fff' }}>
+      <Backdrop open={isLoading} sx={{ zIndex: 1300, color: "#fff" }}>
         <Box textAlign="center">
           <CircularProgress color="inherit" />
           <Typography mt={2}>Processing purchase...</Typography>
         </Box>
       </Backdrop>
     </Container>
-  )
-}
+  );
+};
 
-export default Details
+export default Details;

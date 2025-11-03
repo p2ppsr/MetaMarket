@@ -140,8 +140,8 @@ app.post('/submit', async (req: Request, res: Response) => {
 
     // checking the encryption
     const uhrpFile = await storageDownloader.download(fileUrl)
-    const encryptedDataArray = uhrpFile.data
-    if (!encryptedDataArray || encryptedDataArray.length === 0) {
+    const encryptedData = Array.from(uhrpFile.data as Uint8Array)
+    if (!encryptedData || encryptedData.length === 0) {
       console.error('Downloaded file is empty')
       return res.status(400).json({ message: 'Downloaded file is empty' })
     }
@@ -149,7 +149,7 @@ app.post('/submit', async (req: Request, res: Response) => {
     try {
       // ensure that the file decrypts
       const symmetricKey = new SymmetricKey(encryptionKey, 'hex')
-      const decryptedFile = symmetricKey.decrypt(encryptedDataArray)
+      const decryptedFile = symmetricKey.decrypt(encryptedData)
       console.log('File decrypted successfully, length:', decryptedFile.length)
     } catch (error) {
       console.error('Decryption error:', error)

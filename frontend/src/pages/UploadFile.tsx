@@ -1,95 +1,121 @@
-import { WalletClient } from "@bsv/sdk";
-import { Backdrop, Box, Button, CircularProgress, Collapse, Container, Grid, Paper, TextField, Typography } from "@mui/material";
+import {
+  Backdrop,
+  Box,
+  Button,
+  CircularProgress,
+  Collapse,
+  Container,
+  Grid,
+  Paper,
+  TextField,
+  Typography,
+} from "@mui/material";
 import React, { ChangeEvent, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { StlViewer } from "react-stl-viewer";
 import { toast } from "react-toastify";
 import { publishCommitment } from "../utils/publishCommitment";
+import BabbageGo from "@babbage/go";
 const fetchPublicKey = async (): Promise<string> => {
   try {
-    const client = new WalletClient()
+    const client = new BabbageGo(undefined, {
+      showModal: true,
+      design: {
+        preset: "auroraPulse",
+      },
+    });
     const publicKey = await client.getPublicKey({ identityKey: true });
     return publicKey.publicKey;
   } catch (error) {
     console.error("Error fetching public key:", error);
-    throw new Error("MetaNet Identity is missing. Please ensure you have the MetaNet Client installed and properly configured.")
+    throw new Error(
+      "MetaNet Identity is missing. Please ensure you have the MetaNet Client installed and properly configured."
+    );
   }
-}
+};
 
 const UploadFile: React.FC = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [statusText, setStatusText] = useState("")
-  const [showSuccess, setShowSuccess] = useState(false)
-  const [errorMessage, setErrorMessage] = useState("")
+  const [isLoading, setIsLoading] = useState(false);
+  const [statusText, setStatusText] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [coverImage, setCoverImage] = useState<File | null>(null)
-  const [showAdvancedConfig, setShowAdvancedConfig] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
 
   const [fields, setFields] = useState({
     name: { value: "", error: null as string | null },
     description: { value: "", error: null as string | null },
     satoshis: { value: "", error: null as string | null },
-    expiration: { value: "7", error: null as string | null }
-  })
+    expiration: { value: "7", error: null as string | null },
+  });
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const file = e.target.files?.[0] || null;
 
-    if (!file) return
+    if (!file) return;
 
     if (!file.name.endsWith(".stl")) {
-      setSelectedFile(null)
-      setPreviewUrl(null)
+      setSelectedFile(null);
+      setPreviewUrl(null);
       setErrorMessage("Please upload a valid `.stl` file.");
-      return
+      return;
     }
 
-    setSelectedFile(file)
-    setErrorMessage("")
-    setPreviewUrl(URL.createObjectURL(file))
-  }
+    setSelectedFile(file);
+    setErrorMessage("");
+    setPreviewUrl(URL.createObjectURL(file));
+  };
 
   const handleCoverChange = (e: ChangeEvent<HTMLInputElement>): void => {
-    const file = e.target.files?.[0] || null
-    if (!file) return
+    const file = e.target.files?.[0] || null;
+    if (!file) return;
 
-    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"]
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      setCoverImage(null)
-      setErrorMessage("Please upload a valid image file (PNG, JPG, JPEG, or WebP).");
-      return
+      setCoverImage(null);
+      setErrorMessage(
+        "Please upload a valid image file (PNG, JPG, JPEG, or WebP)."
+      );
+      return;
     }
 
     if (file.size > 1000 * 1024) {
-      setCoverImage(null)
+      setCoverImage(null);
       setErrorMessage("Cover image must not exceed 1MB.");
-      return
+      return;
     }
 
-    setCoverImage(file)
-    setCoverPreviewUrl(URL.createObjectURL(file))
-    setErrorMessage("")
-  }
+    setCoverImage(file);
+    setCoverPreviewUrl(URL.createObjectURL(file));
+    setErrorMessage("");
+  };
 
   const handleChange = (field: string, value: string): void => {
-    let error = null
+    let error = null;
 
-    if (field === "satoshis" && !/^\d*$/.test(value) || parseInt(value) <= 0) {
-      error = "Only positive integers are allowed."
+    if (
+      (field === "satoshis" && !/^\d*$/.test(value)) ||
+      parseInt(value) <= 0
+    ) {
+      error = "Only positive integers are allowed.";
     }
-    if (field === "expiration" && (!/^\d*$/.test(value) || parseInt(value) <= 0)) {
-      error = "Expiration must be a positive integer."
+    if (
+      field === "expiration" &&
+      (!/^\d*$/.test(value) || parseInt(value) <= 0)
+    ) {
+      error = "Expiration must be a positive integer.";
     }
     setFields((prevFields) => ({
       ...prevFields,
-      [field]: { value, error }
-    }))
-  }
+      [field]: { value, error },
+    }));
+  };
 
   const handleCreateSubmit = async (
     e: FormEvent<HTMLFormElement>
@@ -97,21 +123,21 @@ const UploadFile: React.FC = () => {
     e.preventDefault();
 
     if (!selectedFile) {
-      setErrorMessage("An STL file is required.")
-      return
+      setErrorMessage("An STL file is required.");
+      return;
     }
 
     if (!coverImage) {
-      setErrorMessage("A cover image is required.")
-      return
+      setErrorMessage("A cover image is required.");
+      return;
     }
 
     try {
-      setIsLoading(true)
-      setErrorMessage("")
+      setIsLoading(true);
+      setErrorMessage("");
 
       // Get the uploader's public key
-      const publicKey = await fetchPublicKey()
+      const publicKey = await fetchPublicKey();
 
       const filehosting = {
         file: selectedFile,
@@ -121,23 +147,23 @@ const UploadFile: React.FC = () => {
         publicKey,
         expiration: Number(fields.expiration.value),
         coverImage,
-        setStatusText
-      }
+        setStatusText,
+      };
 
-      console.log(filehosting)
-      const result = await publishCommitment(filehosting)
+      console.log(filehosting);
+      const result = await publishCommitment(filehosting);
 
-      setShowSuccess(true)
-      await new Promise((resolve) => setTimeout(resolve, 5000))
-      navigate("/")
+      setShowSuccess(true);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      navigate("/");
     } catch (e) {
       toast.error((e as Error).message);
-      setErrorMessage("Error uploading file, please try again")
+      setErrorMessage("Error uploading file, please try again");
       console.error(e);
     } finally {
       setIsLoading(false);
     }
-  }
+  };
   return (
     <Container maxWidth="lg">
       <Typography variant="h5" gutterBottom>
@@ -233,8 +259,7 @@ const UploadFile: React.FC = () => {
                   !selectedFile ||
                   !coverImage ||
                   Object.entries(fields).some(
-                    ([k, f]) =>
-                      k !== "description" && (f.error || !f.value)
+                    ([k, f]) => k !== "description" && (f.error || !f.value)
                   )
                 }
               >
@@ -262,8 +287,8 @@ const UploadFile: React.FC = () => {
                 textAlign: "center",
                 cursor: previewUrl ? "default" : "pointer",
                 "&:hover": {
-                  backgroundColor: previewUrl ? "inherit" : "#f9f9f9"
-                }
+                  backgroundColor: previewUrl ? "inherit" : "#f9f9f9",
+                },
               }}
               onClick={() =>
                 !previewUrl &&
@@ -318,8 +343,8 @@ const UploadFile: React.FC = () => {
                 textAlign: "center",
                 cursor: coverPreviewUrl ? "default" : "pointer",
                 "&:hover": {
-                  backgroundColor: coverPreviewUrl ? "inherit" : "#f9f9f9"
-                }
+                  backgroundColor: coverPreviewUrl ? "inherit" : "#f9f9f9",
+                },
               }}
               onClick={() =>
                 !coverPreviewUrl &&
@@ -341,10 +366,8 @@ const UploadFile: React.FC = () => {
                     size="small"
                     sx={{ position: "absolute", top: 8, right: 8, zIndex: 1 }}
                     onClick={(e) => {
-                      e.stopPropagation()
-                      document
-                        .getElementById("cover-image-input")
-                        ?.click()
+                      e.stopPropagation();
+                      document.getElementById("cover-image-input")?.click();
                     }}
                   >
                     Change
@@ -360,7 +383,7 @@ const UploadFile: React.FC = () => {
                     sx={{
                       maxWidth: "100%",
                       maxHeight: 300,
-                      borderRadius: 2
+                      borderRadius: 2,
                     }}
                   />
                 </>
@@ -398,7 +421,7 @@ const UploadFile: React.FC = () => {
         </Box>
       </Backdrop>
     </Container>
-  )
-}
+  );
+};
 
-export default UploadFile
+export default UploadFile;

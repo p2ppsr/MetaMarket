@@ -27,8 +27,32 @@
     {
       "name": "MetaMarket",
       "provider": "CARS",
-      "CARSCloudURL": "https://cars.babbage.systems",
+      "CARSCloudURL": "https://cars.metanet.club",
       "projectID": "ea98977f72defcf56238a39a35af6875",
+      "network": "mainnet",
+      "deploy": [
+        "frontend",
+        "backend"
+      ],
+      "frontendHostingMethod": "HTTPS"
+    },
+    {
+      "name": "Chance Server",
+      "provider": "CARS",
+      "CARSCloudURL": "https://cars.metanet.club",
+      "projectID": "f224d4dc85c54cd94a5193e507a89b5e",
+      "network": "mainnet",
+      "deploy": [
+        "frontend",
+        "backend"
+      ],
+      "frontendHostingMethod": "HTTPS"
+    },
+    {
+      "name": "Chabbage",
+      "provider": "CARS",
+      "CARSCloudURL": "https://cars.babbage.systems",
+      "projectID": "d632c0509e5039f81455c41e3d67504f",
       "network": "mainnet",
       "deploy": [
         "frontend",
