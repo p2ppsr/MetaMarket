@@ -5,9 +5,9 @@ import {
   PushDrop,
   TopicBroadcaster,
   Transaction,
-  Utils
-} from "@bsv/sdk";
-import { Img } from "@bsv/uhrp-react";
+  Utils,
+} from '@bsv/sdk';
+import { Img } from '@bsv/uhrp-react';
 import {
   Box,
   Button,
@@ -19,11 +19,11 @@ import {
   LinearProgress,
   Paper,
   Typography,
-} from "@mui/material";
-import React, { useEffect, useState } from "react";
-import constants from "../constants";
-import { DecodedOutput, decodeOutputs } from "../utils/decodeOutputs";
-import BabbageGo from "@babbage/go";
+} from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import constants from '../constants';
+import { DecodedOutput, decodeOutputs } from '../utils/decodeOutputs';
+import BabbageGo from '@babbage/go';
 
 interface UploadedFile {
   fileUrl: string;
@@ -58,24 +58,24 @@ interface WithdrawResponse {
 }
 
 const fields: (keyof DecodedOutput)[] = [
-  "fileUrl",
-  "name",
-  "satoshis",
-  "coverUrl",
-  "txid",
-  "outputIndex",
-  "retentionPeriod",
+  'fileUrl',
+  'name',
+  'satoshis',
+  'coverUrl',
+  'txid',
+  'outputIndex',
+  'retentionPeriod',
 ];
 
 const expiredFields: (keyof DecodedOutput)[] = [
-  "name",
-  "satoshis",
-  "txid",
-  "outputIndex",
-  "retentionPeriod",
+  'name',
+  'satoshis',
+  'txid',
+  'outputIndex',
+  'retentionPeriod',
 ];
 
-const spendFields: (keyof DecodedOutput)[] = ["txid", "outputIndex"];
+const spendFields: (keyof DecodedOutput)[] = ['txid', 'outputIndex'];
 
 const Account: React.FC = () => {
   const [balance, setBalance] = useState<number>(0);
@@ -86,7 +86,12 @@ const Account: React.FC = () => {
   const wallet = new BabbageGo(undefined, {
     showModal: true,
     design: {
-      preset: "auroraPulse",
+      preset: 'auroraPulse',
+    },
+    monetization: {
+      developerIdentity:
+        '025a2cb22976ff42743e4b168f853021b1042aa392792743d60b1234e9d5de5efe',
+      developerFeeSats: 1000,
     },
   });
   const authFetch = new AuthFetch(wallet);
@@ -104,44 +109,44 @@ const Account: React.FC = () => {
         const response = await authFetch.fetch(
           `${constants.keyServer}/balance`,
           {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify(publicKey),
             headers: {
-              "Content-Type": "application/json",
+              'Content-Type': 'application/json',
             },
           }
         );
 
         if (!response) {
-          throw new Error("Error fetching account balance");
+          throw new Error('Error fetching account balance');
         }
         const { balance } = await response.json();
 
         setBalance(balance || 0);
 
         const filesResponse = await lookupResolver.query({
-          service: "ls_market",
+          service: 'ls_metamarket',
           query: {
-            type: "findUploaderFiles",
+            type: 'findUploaderFiles',
             value: {
               publicKey: publicKey.publicKey.toString(),
             },
           },
         });
-        if (filesResponse.type !== "output-list")
-          throw new Error("Lookup answer must be a output-list");
+        if (filesResponse.type !== 'output-list')
+          throw new Error('Lookup answer must be a output-list');
 
         const expiredResponse = await lookupResolver.query({
-          service: "ls_market",
+          service: 'ls_metamarket',
           query: {
-            type: "findUploaderFilesExpired",
+            type: 'findUploaderFilesExpired',
             value: {
               publicKey: publicKey.publicKey.toString(),
             },
           },
         });
-        if (expiredResponse.type !== "output-list")
-          throw new Error("Lookup answer must be a output-list");
+        if (expiredResponse.type !== 'output-list')
+          throw new Error('Lookup answer must be a output-list');
 
         const filesData = await decodeOutputs(filesResponse.outputs, fields);
         const expiredData = await decodeOutputs(
@@ -154,7 +159,7 @@ const Account: React.FC = () => {
         setFiles(filesData as UploadedFile[]);
         setExpiredFiles(expiredData as ExpiredFile[]);
       } catch (err) {
-        console.error("Error fetching account data:", err);
+        console.error('Error fetching account data:', err);
       } finally {
         setLoading(false);
       }
@@ -169,15 +174,15 @@ const Account: React.FC = () => {
       const response = await authFetch.fetch(
         `${constants.keyServer}/withdraw`,
         {
-          method: "POST",
+          method: 'POST',
           body: JSON.stringify(publicKey),
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
         }
       );
       if (!response.ok) {
-        console.error("Error parsing balance result");
+        console.error('Error parsing balance result');
         return;
       }
 
@@ -185,7 +190,7 @@ const Account: React.FC = () => {
         (await response.json()) as unknown as WithdrawResponse;
 
       const processedTx = await wallet.internalizeAction({
-        tx: Utils.toArray(paymentData.transaction, "base64") as AtomicBEEF,
+        tx: Utils.toArray(paymentData.transaction, 'base64') as AtomicBEEF,
         outputs: [
           {
             paymentRemittance: {
@@ -194,7 +199,7 @@ const Account: React.FC = () => {
               senderIdentityKey: paymentData.senderIdentityKey,
             },
             outputIndex: 0,
-            protocol: "wallet payment",
+            protocol: 'wallet payment',
           },
         ],
         description: `Withdraw from MetaMarket to ${
@@ -204,11 +209,11 @@ const Account: React.FC = () => {
         }`,
       });
 
-      console.log("Withdraw successful!", processedTx);
+      console.log('Withdraw successful!', processedTx);
 
       setBalance(0);
     } catch (err) {
-      console.error("Error when withdrawing:", err);
+      console.error('Error when withdrawing:', err);
     } finally {
       setLoading(false);
     }
@@ -219,19 +224,19 @@ const Account: React.FC = () => {
     try {
       // Redeeming the PushDrop token and marking it as spent
       const response = await lookupResolver.query({
-        service: "ls_market",
+        service: 'ls_metamarket',
         query: {
-          type: "findDetails",
+          type: 'findDetails',
           value: {
             txid,
             outputIndex: outputIndex,
           },
         },
       });
-      if (response.type !== "output-list")
-        throw new Error("Lookup answer must be an output-list");
+      if (response.type !== 'output-list')
+        throw new Error('Lookup answer must be an output-list');
       if (response.outputs.length != 1)
-        throw new Error("Must be a single existing UTXO");
+        throw new Error('Must be a single existing UTXO');
 
       const inputBEEF = response.outputs[0].beef;
       const outpoint = `${txid}.${outputIndex}`;
@@ -242,17 +247,17 @@ const Account: React.FC = () => {
           {
             outpoint,
             unlockingScriptLength: 74, // PushDrop scripts tend to be around 74
-            inputDescription: "metamarket upload token",
+            inputDescription: 'metamarket upload token',
           },
         ],
-        description: "spending token from metamarket UHRP",
+        description: 'spending token from metamarket UHRP',
       });
-      if (!signableTransaction) throw new Error("Token must be spendable");
+      if (!signableTransaction) throw new Error('Token must be spendable');
 
       const unlocker = pushdrop.unlock(
-        [2, "metamarket"],
-        "1",
-        "anyone",
+        [2, 'metamarket'],
+        '1',
+        'anyone',
         undefined,
         true
       );
@@ -270,17 +275,17 @@ const Account: React.FC = () => {
 
       console.log(action);
 
-      if (!action) throw new Error("Spend token failed.");
+      if (!action) throw new Error('Spend token failed.');
 
       // Removing the file from the backend database
-      const broadcaster = new TopicBroadcaster(["tm_market"], {
+      const broadcaster = new TopicBroadcaster(['tm_metamarket'], {
         networkPreset:
-          window.location.hostname === "localhost" ? "local" : "mainnet",
+          window.location.hostname === 'localhost' ? 'local' : 'mainnet',
       });
       const spend = await broadcaster.broadcast(
         Transaction.fromAtomicBEEF(action.tx as number[])
       );
-      console.log("Token Spent:", spend);
+      console.log('Token Spent:', spend);
 
       setFiles((prev) =>
         prev.filter((f) => !(f.txid === txid && f.outputIndex === outputIndex))
@@ -289,7 +294,7 @@ const Account: React.FC = () => {
         prev.filter((f) => !(f.txid === txid && f.outputIndex === outputIndex))
       );
     } catch (err) {
-      console.error("Delete file error:", err);
+      console.error('Delete file error:', err);
     } finally {
       setLoading(false);
     }
@@ -314,16 +319,16 @@ const Account: React.FC = () => {
   }) => (
     <Grid size={{ xs: 12, sm: 6, md: 4 }}>
       <Card
-        sx={{ p: 1, display: "flex", flexDirection: "column", height: "100%" }}
+        sx={{ p: 1, display: 'flex', flexDirection: 'column', height: '100%' }}
       >
         {coverUrl && (
           <Img
             src={coverUrl}
             alt={name}
             style={{
-              width: "100%",
-              aspectRatio: "4/3",
-              objectFit: "cover",
+              width: '100%',
+              aspectRatio: '4/3',
+              objectFit: 'cover',
               borderRadius: 4,
             }}
           />
@@ -359,9 +364,9 @@ const Account: React.FC = () => {
       <Paper
         variant="outlined"
         sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           p: 2,
           mb: 4,
         }}

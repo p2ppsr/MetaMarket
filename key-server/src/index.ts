@@ -160,7 +160,7 @@ app.post('/submit', async (req: Request, res: Response) => {
     for (let attempt = 1; attempt <= 6; attempt++) {
       const lookupResolver = new LookupResolver({ networkPreset: NETWORK_PRESET })
       const check = await lookupResolver.query({
-        service: 'ls_market',
+        service: 'ls_metamarket',
         query: {
           type: 'urlCheck',
           value: { fileUrl }

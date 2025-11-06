@@ -3,8 +3,8 @@ import {
   LookupResolver,
   StorageDownloader,
   SymmetricKey,
-} from "@bsv/sdk";
-import { Img } from "@bsv/uhrp-react";
+} from '@bsv/sdk';
+import { Img } from '@bsv/uhrp-react';
 import {
   Backdrop,
   Box,
@@ -14,13 +14,13 @@ import {
   Grid,
   Paper,
   Typography,
-} from "@mui/material";
-import React, { useEffect, useState } from "react";
-import Markdown from "react-markdown";
-import { useParams } from "react-router-dom";
-import constants from "../constants";
-import { DecodedOutput, decodeOutputs } from "../utils/decodeOutputs";
-import BabbageGo from "@babbage/go";
+} from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import Markdown from 'react-markdown';
+import { useParams } from 'react-router-dom';
+import constants from '../constants';
+import { DecodedOutput, decodeOutputs } from '../utils/decodeOutputs';
+import BabbageGo from '@babbage/go';
 
 interface DetailsRecord {
   fileUrl: string;
@@ -36,16 +36,16 @@ interface DetailsRecord {
 }
 
 const fields: (keyof DecodedOutput)[] = [
-  "fileUrl",
-  "name",
-  "description",
-  "satoshis",
-  "creatorPublicKey",
-  "size",
-  "txid",
-  "outputIndex",
-  "retentionPeriod",
-  "coverUrl",
+  'fileUrl',
+  'name',
+  'description',
+  'satoshis',
+  'creatorPublicKey',
+  'size',
+  'txid',
+  'outputIndex',
+  'retentionPeriod',
+  'coverUrl',
 ];
 
 const Details: React.FC = () => {
@@ -58,24 +58,24 @@ const Details: React.FC = () => {
   const [decryptedFileURL, setDecryptedFileURL] = useState<string | null>(null);
   const lookupResolver = new LookupResolver({
     networkPreset:
-      window.location.hostname === "localhost" ? "local" : "mainnet",
+      window.location.hostname === 'localhost' ? 'local' : 'mainnet',
   });
 
   useEffect(() => {
     const fetchDetails = async () => {
       try {
         const response = await lookupResolver.query({
-          service: "ls_market",
+          service: 'ls_metamarket',
           query: {
-            type: "findDetails",
+            type: 'findDetails',
             value: {
               txid,
-              outputIndex: parseInt(outputIndex || "0", 10),
+              outputIndex: parseInt(outputIndex || '0', 10),
             },
           },
         });
-        if (response.type !== "output-list")
-          throw new Error("Lookup answer must be an output-list");
+        if (response.type !== 'output-list')
+          throw new Error('Lookup answer must be an output-list');
 
         const fileData = await decodeOutputs(response.outputs, fields);
         setDetails(fileData[0] as DetailsRecord);
@@ -96,19 +96,19 @@ const Details: React.FC = () => {
 
       const fileUrl = details.fileUrl;
       if (!fileUrl) {
-        throw new Error("No fileUrl available to purchase!");
+        throw new Error('No fileUrl available to purchase!');
       }
 
-      console.log("File url:", fileUrl);
+      console.log('File url:', fileUrl);
 
       const wallet = new BabbageGo(undefined, {
         showModal: true,
         design: {
-          preset: "auroraPulse",
+          preset: 'auroraPulse',
         },
         monetization: {
           developerIdentity:
-            "03ccb6ab654541f5ce16cadf0a094edd97085a9070086e4f7ae525111e13324beb",
+            '025a2cb22976ff42743e4b168f853021b1042aa392792743d60b1234e9d5de5efe',
           developerFeeSats: 1000,
         },
       });
@@ -119,23 +119,23 @@ const Details: React.FC = () => {
       let payResponse;
       try {
         payResponse = await authFetch.fetch(keyUrl, {
-          method: "POST",
+          method: 'POST',
           body: JSON.stringify({ fileUrl }),
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
         });
       } catch (error) {
         throw new Error(`Failed to complete purchase: ${error}`);
       }
-      if (!payResponse) throw new Error("Failed to complete purchase");
+      if (!payResponse) throw new Error('Failed to complete purchase');
 
       const purchaseResult = await payResponse.json();
       const encryptionKey = purchaseResult.encryptionKey;
       if (!encryptionKey) {
         if (!purchaseResult.description) {
           throw new Error(
-            "Purchase was successful, but no encryptionKey was returned."
+            'Purchase was successful, but no encryptionKey was returned.'
           );
         } else {
           throw new Error(purchaseResult.description);
@@ -145,19 +145,21 @@ const Details: React.FC = () => {
       const storageDownloader = new StorageDownloader();
       const { data: encryptedBytes, mimeType } =
         await storageDownloader.download(fileUrl);
-      console.log("Downloaded file from UHRP, mimeType:", mimeType);
+      console.log('Downloaded file from UHRP, mimeType:', mimeType);
 
       // Decrypting the file
-      const symmetricKey = new SymmetricKey(encryptionKey, "hex");
-      const decryptedBytes = symmetricKey.decrypt(encryptedBytes) as number[]; // test
+      const symmetricKey = new SymmetricKey(encryptionKey, 'hex');
+      const decryptedBytes = symmetricKey.decrypt(
+        Array.from(encryptedBytes)
+      ) as number[]; // test
 
       const blob = new Blob([Uint8Array.from(decryptedBytes)], {
-        type: "model/stl",
+        type: 'model/stl',
       });
       const url = URL.createObjectURL(blob);
       setDecryptedFileURL(url);
     } catch (error) {
-      console.error("Error during purchase:", error);
+      console.error('Error during purchase:', error);
     } finally {
       setIsLoading(false);
     }
@@ -165,9 +167,9 @@ const Details: React.FC = () => {
 
   const handleDownload = async () => {
     if (!decryptedFileURL) return;
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = decryptedFileURL;
-    a.download = `${details?.name || "download"}.stl`;
+    a.download = `${details?.name || 'download'}.stl`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -197,16 +199,16 @@ const Details: React.FC = () => {
           <Grid size={{ xs: 1, md: 5 }}>
             <Box
               sx={{
-                width: "100%",
-                aspectRatio: "4/3",
-                overflow: "hidden",
+                width: '100%',
+                aspectRatio: '4/3',
+                overflow: 'hidden',
                 borderRadius: 1,
               }}
             >
               <Img
                 src={details.coverUrl}
                 alt={details.name}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
             </Box>
           </Grid>
@@ -231,7 +233,7 @@ const Details: React.FC = () => {
               </Grid>
               <Grid size={{ xs: 1, sm: 6 }}>
                 <Typography>
-                  <strong>Expires:</strong>{" "}
+                  <strong>Expires:</strong>{' '}
                   {new Date(details.retentionPeriod).toLocaleString()}
                 </Typography>
               </Grid>
@@ -252,7 +254,7 @@ const Details: React.FC = () => {
 
           {/* Purchase Area */}
           <Grid size={{ xs: 1, md: 4 }}>
-            <Box sx={{ textAlign: "center", mt: 4 }}>
+            <Box sx={{ textAlign: 'center', mt: 4 }}>
               {!decryptedFileURL ? (
                 <Button
                   variant="contained"
@@ -261,7 +263,7 @@ const Details: React.FC = () => {
                   disabled={isLoading}
                   sx={{ px: 6, borderRadius: 2 }}
                 >
-                  {isLoading ? "Purchasing..." : "Purchase File"}
+                  {isLoading ? 'Purchasing...' : 'Purchase File'}
                 </Button>
               ) : (
                 <Button
@@ -280,7 +282,7 @@ const Details: React.FC = () => {
       </Paper>
 
       {/* Purchase Backdrop */}
-      <Backdrop open={isLoading} sx={{ zIndex: 1300, color: "#fff" }}>
+      <Backdrop open={isLoading} sx={{ zIndex: 1300, color: '#fff' }}>
         <Box textAlign="center">
           <CircularProgress color="inherit" />
           <Typography mt={2}>Processing purchase...</Typography>

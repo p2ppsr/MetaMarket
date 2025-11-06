@@ -7,9 +7,10 @@ import {
   TopicBroadcaster,
   Transaction,
   Utils,
-} from "@bsv/sdk";
-import constants from "../constants";
-import BabbageGo from "@babbage/go";
+  WalletClient,
+} from '@bsv/sdk';
+import constants from '../constants';
+import BabbageGo from '@babbage/go';
 
 export async function publishCommitment({
   file,
@@ -31,7 +32,7 @@ export async function publishCommitment({
   setStatusText: (text: string) => void;
 }): Promise<string> {
   try {
-    const storageURL = "https://nanostore.babbage.systems";
+    const storageURL = 'https://nanostore.babbage.systems';
 
     // Encrypting STL File
     const symmetricKey = SymmetricKey.fromRandom();
@@ -45,8 +46,8 @@ export async function publishCommitment({
     };
 
     if (!uploadableFile) {
-      setStatusText("Error uploading STL file.");
-      throw new Error("Could not prepare STL file.");
+      setStatusText('Error uploading STL file.');
+      throw new Error('Could not prepare STL file.');
     }
 
     // Storing the file on the Market host
@@ -55,12 +56,17 @@ export async function publishCommitment({
     const wallet = new BabbageGo(undefined, {
       showModal: true,
       design: {
-        preset: "auroraPulse",
+        preset: 'auroraPulse',
+      },
+      monetization: {
+        developerIdentity:
+          '025a2cb22976ff42743e4b168f853021b1042aa392792743d60b1234e9d5de5efe',
+        developerFeeSats: 1000,
       },
     });
     const storageUploader = new StorageUploader({ storageURL, wallet });
 
-    setStatusText("Uploading files to UHRP...");
+    setStatusText('Uploading files to UHRP...');
     const stl = await storageUploader.publishFile({
       file: uploadableFile,
       retentionPeriod,
@@ -84,57 +90,59 @@ export async function publishCommitment({
     const expiryTime = Date.now() + expiration * 60 * 60 * 24 * 1000;
 
     const fields = [
-      Utils.toArray(stl.uhrpURL, "utf8"),
-      Utils.toArray(name, "utf8"),
-      Utils.toArray(description, "utf8"),
-      Utils.toArray("" + satoshis, "utf8"),
-      Utils.toArray(publicKey, "utf8"),
-      Utils.toArray("" + file.size, "utf8"),
-      Utils.toArray("" + expiryTime, "utf8"),
-      Utils.toArray(cover.uhrpURL, "utf8"),
+      Utils.toArray(stl.uhrpURL, 'utf8'),
+      Utils.toArray(name, 'utf8'),
+      Utils.toArray(description, 'utf8'),
+      Utils.toArray('' + satoshis, 'utf8'),
+      Utils.toArray(publicKey, 'utf8'),
+      Utils.toArray('' + file.size, 'utf8'),
+      Utils.toArray('' + expiryTime, 'utf8'),
+      Utils.toArray(cover.uhrpURL, 'utf8'),
     ];
     const pushdrop = new PushDrop(wallet);
     const lockingScript = await pushdrop.lock(
       fields,
-      [2, "metamarket"],
-      "1",
-      "anyone",
+      [2, 'metamarket'],
+      '1',
+      'anyone',
       true
     );
 
     console.log(
       `${stl.uhrpURL}\n${name}\n${description}\n${satoshis}\n${publicKey}\n${file.size}\n${expiryTime}\n${cover.uhrpURL}`
     );
+    debugger;
+
     const { txid, tx } = await wallet.createAction({
       outputs: [
         {
           lockingScript: lockingScript.toHex(),
           satoshis: 1,
-          outputDescription: "metamarket upload token",
+          outputDescription: 'metamarket upload token',
         },
       ],
-      description: "publish to metamarket UHRP",
+      description: 'publish to metamarket UHRP',
       options: {
         acceptDelayedBroadcast: false,
         randomizeOutputs: false,
       },
     });
     if (!tx) {
-      setStatusText("Error creating transcation data");
-      throw new Error("Error creating action");
+      setStatusText('Error creating transcation data');
+      throw new Error('Error creating action');
     }
 
-    setStatusText("Broadcasting transcation");
-    const broadcaster = new TopicBroadcaster(["tm_market"], {
+    setStatusText('Broadcasting transcation');
+    const broadcaster = new TopicBroadcaster(['tm_metamarket'], {
       networkPreset:
-        window.location.hostname === "localhost" ? "local" : "mainnet",
+        window.location.hostname === 'localhost' ? 'local' : 'mainnet',
     });
     const backendResponse = await broadcaster.broadcast(
       Transaction.fromAtomicBEEF(tx)
     );
-    console.log("Backed server response:", backendResponse);
+    console.log('Backed server response:', backendResponse);
 
-    setStatusText("Registering with MetaMarket...");
+    setStatusText('Registering with MetaMarket...');
     // Uploading encryption key to key server
     const authFetch = new AuthFetch(wallet);
     const body = {
@@ -146,37 +154,38 @@ export async function publishCommitment({
 
     try {
       const response = await authFetch.fetch(`${constants.keyServer}/submit`, {
-        method: "POST",
+        method: 'POST',
         body,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       });
       if (!response.ok) {
         throw new Error(response.statusText);
       }
     } catch (error) {
-      setStatusText("Error uploading to MetaMarket");
+      setStatusText('Error uploading to MetaMarket');
       await new Promise((resolve) => setTimeout(resolve, 5000));
 
       // Redeeming the transaction created before
+
       const { signableTransaction } = await wallet.createAction({
         inputBEEF: tx,
         inputs: [
           {
             outpoint: `${txid}.0`,
             unlockingScriptLength: 74, // PushDrop scripts tend to be around 74
-            inputDescription: "metamarket upload token",
+            inputDescription: 'metamarket upload token',
           },
         ],
-        description: "spending token from metamarket UHRP",
+        description: 'spending token from metamarket UHRP',
       });
-      if (!signableTransaction) throw new Error("Token must be spendable");
+      if (!signableTransaction) throw new Error('Token must be spendable');
 
       const unlocker = pushdrop.unlock(
-        [2, "metamarket"],
-        "1",
-        "anyone",
+        [2, 'metamarket'],
+        '1',
+        'anyone',
         undefined,
         true
       );
@@ -192,19 +201,19 @@ export async function publishCommitment({
           },
         },
       });
-      if (!action) throw new Error("Spend token failed.");
+      if (!action) throw new Error('Spend token failed.');
 
       const spend = await broadcaster.broadcast(
         Transaction.fromAtomicBEEF(action.tx as number[])
       );
-      console.log("Token Spent:", spend);
-      throw new Error("Key server registration failed.");
+      console.log('Token Spent:', spend);
+      throw new Error('Key server registration failed.');
     }
 
-    return "Upload successful!!!";
+    return 'Upload successful!!!';
   } catch (error) {
-    setStatusText("");
-    console.error("Error publishing commitment:", error);
+    setStatusText('');
+    console.error('Error publishing commitment:', error);
     throw `Error publishing commitment: ${error}`;
   }
 }

@@ -43,7 +43,7 @@ const Store: React.FC = () => {
       let response = null
       if (query && filter === 'name') {
         response = await lookupResolver.query({
-          service: 'ls_market',
+          service: 'ls_metamarket',
           query: {
             type: 'findByName',
             value: { name: searchTerm }
@@ -51,7 +51,7 @@ const Store: React.FC = () => {
         })
       } else {
         response = await lookupResolver.query({
-          service: 'ls_market',
+          service: 'ls_metamarket',
           query: 'findStore'
         })
       }

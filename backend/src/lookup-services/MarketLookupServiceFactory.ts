@@ -26,7 +26,7 @@ class MarketLookupService implements LookupService {
   async outputAdmittedByTopic(payload: OutputAdmittedByTopic): Promise<void> {
     if (payload.mode !== 'locking-script') throw new Error('Invalid mode')
     const { topic, lockingScript, txid, outputIndex } = payload
-    if (topic !== 'tm_market') throw new Error(`Invalid topic "${topic}" for this service.`)
+    if (topic !== 'tm_metamarket') throw new Error(`Invalid topic "${topic}" for this service.`)
     try {
       const decodedScript = PushDrop.decode(lockingScript)
       const fields = decodedScript.fields
@@ -66,7 +66,7 @@ class MarketLookupService implements LookupService {
   async outputSpent(payload: OutputSpent): Promise<void> {
     if (payload.mode !== 'none') throw new Error('Invalid mode')
     const { topic, txid, outputIndex } = payload
-    if (topic !== 'tm_market') throw new Error(`Invalid topic "${topic}" for this service.`)
+    if (topic !== 'tm_metamarket') throw new Error(`Invalid topic "${topic}" for this service.`)
     await this.storage.deleteRecord(txid, outputIndex)
   }
 
@@ -94,7 +94,7 @@ class MarketLookupService implements LookupService {
       }
 
       // Validate service
-      if (question.service !== 'ls_market') {
+      if (question.service !== 'ls_metamarket') {
         throw new Error('Lookup service not supported!');
       }
 
