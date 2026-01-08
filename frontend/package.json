@@ -12,8 +12,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@babbage/go": "^0.1.9",
-    "@bsv/sdk": "^1.8.9",
+    "@babbage/go": "^0.1.12",
+    "@bsv/sdk": "^1.9.30",
     "@bsv/uhrp-react": "^1.0.4",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",

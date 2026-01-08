@@ -26,6 +26,15 @@
         "backend"
       ],
       "frontendHostingMethod": "HTTPS"
+    },
+    {
+      "name": "Local LARS",
+      "network": "mainnet",
+      "provider": "LARS",
+      "run": [
+        "backend",
+        "frontend"
+      ]
     }
   ]
 }

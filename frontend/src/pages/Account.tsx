@@ -97,8 +97,7 @@ const Account: React.FC = () => {
   const authFetch = new AuthFetch(wallet);
   const pushdrop = new PushDrop(wallet);
   const lookupResolver = new LookupResolver({
-    networkPreset:
-      window.location.hostname === "localhost" ? "local" : "mainnet",
+    networkPreset: constants.preset,
   });
 
   useEffect(() => {
@@ -279,8 +278,7 @@ const Account: React.FC = () => {
 
       // Removing the file from the backend database
       const broadcaster = new TopicBroadcaster(['tm_metamarket'], {
-        networkPreset:
-          window.location.hostname === 'localhost' ? 'local' : 'mainnet',
+        networkPreset: constants.preset,
       });
       const spend = await broadcaster.broadcast(
         Transaction.fromAtomicBEEF(action.tx as number[])

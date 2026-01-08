@@ -57,8 +57,7 @@ const Details: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [decryptedFileURL, setDecryptedFileURL] = useState<string | null>(null);
   const lookupResolver = new LookupResolver({
-    networkPreset:
-      window.location.hostname === 'localhost' ? 'local' : 'mainnet',
+    networkPreset: constants.preset,
   });
 
   useEffect(() => {

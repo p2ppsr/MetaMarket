@@ -16,29 +16,68 @@
     "groupPermissions": {
       "protocolPermissions": [
         {
-          "protocolID": [1, "identity key retrieval"],
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "counterparty": "02f29bca4fc033a7efc972d790c6e16e31ed405d11de1853b830d620c1f3c961fa",
+          "description": "To pay for services"
+        },
+        {
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "counterparty": "03ccb6ab654541f5ce16cadf0a094edd97085a9070086e4f7ae525111e13324beb",
+          "description": "To pay for services"
+        },
+        {
+          "protocolID": [
+            1,
+            "messagebox"
+          ],
+          "counterparty": "03ccb6ab654541f5ce16cadf0a094edd97085a9070086e4f7ae525111e13324beb",
+          "description": "For payment delivery communication"
+        },
+        {
+          "protocolID": [
+            2,
+            "auth message signature"
+          ],
+          "counterparty": "",
+          "description": "For mutual authentication with servers"
+        },
+        {
+          "protocolID": [
+            2,
+            "server hmac"
+          ],
           "counterparty": "self",
-          "description": "for fetching user identities"
+          "description": "For nonce generation and HMAC creation"
         },
         {
-          "protocolID": [2, "server hmac"],
-          "counterparty": "self",
-          "description": "for deriving keys related to hmac"
+          "protocolID": [
+            1,
+            "identity key retrieval"
+          ],
+          "counterparty": "",
+          "description": "For identity resolution and verification"
         },
         {
-          "protocolID": [2, "3241645161d8"],
+          "protocolID": [
+            2,
+            "3241645161d8"
+          ],
+          "counterparty": "",
+          "description": "For automatic payment handling (402 Payment Required)"
+        },
+        {
+          "protocolID": [
+            2,
+            "metamarket"
+          ],
           "counterparty": "anyone",
-          "description": "for identifying users"
-        },
-        {
-          "protocolID": [2, "metamarket"],
-          "counterparty": "anyone",
-          "description": "uploading, redeeming tokens and buying stl files"
-        },
-        {
-          "protocolID": [2, "auth message signature"],
-          "counterparty": "anyone",
-          "description": "for signing messages"
+          "description": "MetaMarket Upload Token"
         }
       ]
     }

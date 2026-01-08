@@ -6,6 +6,7 @@ import { AmountDisplay } from 'amountinator-react'
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DecodedOutput, decodeOutputs } from '../utils/decodeOutputs'
+import constants from '../constants'
 
 interface StoreRecord {
   name: string
@@ -35,7 +36,7 @@ const Store: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filter, setFilter] = useState<FilterKey>('name')
-  const lookupResolver = new LookupResolver({ networkPreset: window.location.hostname === 'localhost' ? 'local' : 'mainnet' })
+  const lookupResolver = new LookupResolver({ networkPreset: constants.preset  })
 
   const fetchFiles = async (query?: string) => {
     setLoading(true)

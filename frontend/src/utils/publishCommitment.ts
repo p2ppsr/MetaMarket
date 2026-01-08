@@ -134,8 +134,7 @@ export async function publishCommitment({
 
     setStatusText('Broadcasting transcation');
     const broadcaster = new TopicBroadcaster(['tm_metamarket'], {
-      networkPreset:
-        window.location.hostname === 'localhost' ? 'local' : 'mainnet',
+      networkPreset: constants.preset,
     });
     const backendResponse = await broadcaster.broadcast(
       Transaction.fromAtomicBEEF(tx)

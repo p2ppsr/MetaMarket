@@ -1,12 +1,19 @@
-import React, {useEffect, useState} from 'react'
-import { Route, BrowserRouter as Router, Routes } from 'react-router-dom'
-import Layout from './Layout'
-import Account from './pages/Account'
-import Details from './pages/Details'
-import Store from './pages/Store'
-import UploadFile from './pages/UploadFile'
+import React, { useEffect } from 'react';
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import Layout from './Layout';
+import Account from './pages/Account';
+import Details from './pages/Details';
+import Store from './pages/Store';
+import UploadFile from './pages/UploadFile';
+import { WalletClient } from '@bsv/sdk';
 
 const App: React.FC = () => {
+  useEffect(() => {
+    (async () => {
+      const wallet = new WalletClient();
+      await wallet.waitForAuthentication();
+    })();
+  }, []);
   return (
     <Router>
       <Routes>
@@ -18,7 +25,7 @@ const App: React.FC = () => {
         </Route>
       </Routes>
     </Router>
-  )
-}
+  );
+};
 
-export default App
+export default App;
