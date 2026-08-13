@@ -32,6 +32,10 @@
     "react-toastify": "^11.0.3",
     "vite": "^6.2.5"
   },
+  "overrides": {
+    "@bsv/sdk": "$@bsv/sdk",
+    "@bsv/wallet-toolbox-client": "2.9.0"
+  },
   "devDependencies": {
     "@types/react-dom": "^19.1.5",
     "buffer": "^6.0.3",
