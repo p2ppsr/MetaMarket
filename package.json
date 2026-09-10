@@ -7,6 +7,12 @@
     "@p2ppsr/cars-cli": "^1.2.13",
     "@p2ppsr/lars": "^1.5.11"
   },
+  "engines": {
+    "node": ">=22"
+  },
+  "overrides": {
+    "@bsv/sdk": "^2.5.0"
+  },
   "scripts": {
     "lars": "lars",
     "cars": "cars",
