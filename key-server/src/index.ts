@@ -35,6 +35,23 @@ declare module 'express-serve-static-core' {
 const app: Express = express()
 let dbClient: MongoClient
 let keyStorage: KeyStorage
+let draining = false
+
+// Withdraw readiness before process exit so another serving member can take
+// new requests. A live MongoDB ping prevents a listener-only false positive.
+app.get('/healthz', async (_req, res) => {
+  if (draining || !dbClient || !keyStorage) {
+    res.status(503).json({ ready: false })
+    return
+  }
+  try {
+    await dbClient.db(DATABASE_NAME).command({ ping: 1 })
+    res.status(200).json({ ready: true })
+  } catch {
+    res.status(503).json({ ready: false })
+  }
+})
+process.on('SIGUSR2', () => { draining = true })
 
 // Middleware
 app.use(bodyParser.json())
@@ -311,7 +328,7 @@ app.post('/withdraw', async (req: Request, res: Response) => {
   }
 })
 
-app.listen(PORT, async () => {
+const server = app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`)
 
   try {
@@ -327,3 +344,11 @@ app.listen(PORT, async () => {
   }
 })
 
+process.on('SIGTERM', () => {
+  draining = true
+  server.close(async () => {
+    await dbClient?.close()
+    process.exit(0)
+  })
+  setTimeout(() => process.exit(1), 25000).unref()
+})
