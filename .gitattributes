@@ -1,0 +1,3 @@
+# The legacy tracked key-server environment file must never be rendered in
+# patch output while being removed from the repository head.
+key-server/.env -diff

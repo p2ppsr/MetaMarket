@@ -6,7 +6,6 @@ import crypto, { randomBytes } from 'crypto'
 import dotenv from 'dotenv'
 import express, { Express, NextFunction, Request, Response } from 'express'
 import { MongoClient } from 'mongodb'
-import prettyjson from 'prettyjson'
 import { KeyStorage } from './KeyStorage.js'
 import { DecodedOutput } from './types.js'
 import { decodeOutputs } from './utils/decodeOutputs.js'
@@ -71,19 +70,7 @@ app.use((req, res, next: NextFunction) => {
   }
 })
 
-// Logging
-app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`[${req.method}] <- ${req.url}`);
-  const logObject = { ...req.body }
-  console.log(prettyjson.render(logObject, { keysColor: 'blue' }))
-  const originalJson = res.json.bind(res)
-  res.json = (json: any) => {
-    console.log(`[${req.method}] -> ${req.url}`)
-    console.log(prettyjson.render(json, { keysColor: 'green' }))
-    return originalJson(json)
-  }
-  next()
-})
+// Do not log request or response bodies: they can contain encryption keys.
 
 
 app.use(express.static('public'))
@@ -110,7 +97,6 @@ app.use(createPaymentMiddleware({
       if (!record || record.length != 1) {
         return 0
       }
-      console.log(record[0].satoshis)
       return record[0].satoshis
     } catch (e) {
       return 0
@@ -126,7 +112,6 @@ app.post('/submit', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Missing required fields' })
     }
 
-    console.log(`File URL: ${fileUrl}`)
     // checking if the file is on UHRP
     if (!StorageUtils.isValidURL(fileUrl)) {
       return res.status(400).json({ message: `Invalid file Url: ${fileUrl}` });
@@ -138,7 +123,7 @@ app.post('/submit', async (req: Request, res: Response) => {
     for (let attempt = 1; attempt <= 6; attempt++) {
       resolvedUrl = await storageDownloader.resolve(fileUrl)
       if (resolvedUrl.length > 0) {
-        console.log(`Resolved URL in ${attempt} attempts:`, resolvedUrl)
+        console.log(`Resolved file URL in ${attempt} attempts`)
         break
       }
       if (attempt < 6) {
@@ -151,7 +136,7 @@ app.post('/submit', async (req: Request, res: Response) => {
     }
 
     if (!resolvedUrl || resolvedUrl.length === 0) {
-      console.error('File not found on UHRP:', fileUrl)
+      console.error('File not found on UHRP')
       return res.status(404).json({ message: 'File not found on UHRP', fileUrl });
     }
 
@@ -192,7 +177,7 @@ app.post('/submit', async (req: Request, res: Response) => {
       const result = await decodeOutputs(check.outputs, fields)
 
       if (result.length >= 0) {
-        console.log(`Lookup success in ${attempt} attempts:`, result)
+        console.log(`Lookup succeeded in ${attempt} attempts`)
         break
       }
 
@@ -259,7 +244,6 @@ app.post('/balance', async (req: Request, res: Response) => {
     if (!publicKey) return res.status(400).json({ error: 'Missing publicKey in body' })
 
     const balance = await keyStorage.getBalance(publicKey)
-    console.log('User Balance:', balance)
     return res.status(200).json({
       success: true,
       balance
